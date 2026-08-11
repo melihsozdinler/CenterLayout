@@ -25,23 +25,31 @@ ProLiVis 2.0 is a from-scratch rewrite, not a port.
 
 ## ProLiVis 2.0
 
+![Center layout of the SARS-CoV-2 literature](paper/figures/center-layout-aggregated.png)
+
+*The SARS-CoV-2 literature from BioGRID 5.0.260: 1,688 publications across 19
+experimental methods. Sector width is share of the literature, node area is
+interactions contributed — so the widest sectors are where most* papers *are, and the
+largest nodes are where most* interactions *are. They are not the same methods.*
+
 **What it does**
 
-- Ingests BioGRID **offline** (drag in a `BIOGRID-*.tab3.zip` bulk download) or **online**
-  (the BioGRID REST API, with your own access key).
+- Ingests BioGRID **offline** (drag in a `BIOGRID-*.tab3.zip`) or **online** (the REST
+  API, with your own access key). 76,632 records load in ~12 s at 86 MB of heap.
 - Rebuilds the **center layout** — organism → experimental method → publication — as a
-  deterministic, reproducible radial layout.
-- Adds further views: bipartite publication↔protein with method lanes, adjacency matrix + UpSet,
-  hierarchical edge bundling + chord, and a literature timeline.
-- Scores every interaction with a documented **citation-trust** model combining BioGRID evidence
-  (replication, independent labs, method diversity, throughput) with external citation data from
-  OpenAlex and PubMed.
-- Extracts high-level structure: maximal cliques, biconnected components, articulation points and
-  bridges, *k*-cores, communities, and edge-removal cascades.
-- **Compares and merges** datasets across organisms, BioGRID releases, or queries, keeping per-edge
-  provenance.
-- Exports to CSV/TSV, JSON, GraphML, GML, SIF (Cytoscape), Parquet, SVG and PNG — plus a session
-  manifest that reproduces any figure exactly.
+  deterministic layout, so a figure can be regenerated exactly.
+- Adds five further views: adjacency matrix, UpSet of method combinations, bipartite
+  publication↔protein with method lanes, literature timeline, and method chord.
+- Scores every interaction with a documented **citation-trust** model: replication,
+  **independent laboratories**, method diversity, assay directness, throughput,
+  literature impact and currency. Unknown inputs are reported as unknown, never as zero.
+- Extracts structure: maximal cliques, biconnected components, articulation points,
+  bridges, *k*-cores, and edge-removal cascades — including removal in
+  *trust-ascending* order, which asks what survives if you only believe the evidence.
+- **Compares and merges** datasets across organisms, releases or queries, keeping
+  per-edge provenance.
+- Exports to CSV/TSV, GraphML, GML, SIF (Cytoscape) and SVG, plus a session manifest
+  that reproduces any figure.
 
 **Your data stays on your machine.** Bulk dumps are parsed and queried locally in the browser.
 Nothing is uploaded; network access is used only if you turn on online mode or literature
@@ -49,8 +57,8 @@ enrichment.
 
 ### Install
 
-Full instructions, including air-gapped use, are in [`docs/INSTALL.md`](docs/INSTALL.md).
-The short version:
+Nothing, if you like: open <https://melihsozdinler.github.io/CenterLayout/> and drag in
+a BioGRID download. Otherwise:
 
 ```bash
 git clone https://github.com/melihsozdinler/CenterLayout
@@ -59,7 +67,18 @@ npm ci
 npm run dev
 ```
 
-Requires Node.js ≥ 20.19. Or skip installing entirely and open the hosted build.
+Requires Node.js ≥ 20.19. [`docs/INSTALL.md`](docs/INSTALL.md) covers all four options,
+including air-gapped use, which BioGRID files to download, and troubleshooting.
+
+### Documentation
+
+| | |
+| --- | --- |
+| [`docs/INSTALL.md`](docs/INSTALL.md) | Getting it running, and getting the data |
+| [`docs/USAGE.md`](docs/USAGE.md) | The views, scoring, analysis, comparison, export |
+| [`docs/TRUST.md`](docs/TRUST.md) | The citation-trust model in full, with its equations |
+| [`docs/DATA.md`](docs/DATA.md) | Schema, and three things about BioGRID worth knowing |
+| [`docs/ALGORITHMS.md`](docs/ALGORITHMS.md) | What each algorithm computes and what it costs |
 
 ### Development
 
