@@ -19,7 +19,7 @@
 import type { PpiGraph } from '../algo/graph'
 import { connectedComponents } from '../algo/structure'
 
-export type NetworkLayoutMode = 'force' | 'grouped' | 'circular'
+export type NetworkLayoutMode = 'force' | 'grouped' | 'circular' | 'ego'
 
 export interface NetworkLayoutOptions {
   readonly mode?: NetworkLayoutMode
@@ -32,6 +32,11 @@ export interface NetworkLayoutOptions {
   readonly gravity?: number
   /** Group index per node, for `grouped`. Defaults to connected components. */
   readonly groups?: readonly number[]
+  /**
+   * Dense index of the protein to centre an `ego` layout on. Its partners form the
+   * first ring, their partners the second, and so on outward by graph distance.
+   */
+  readonly focus?: number
 }
 
 export interface NetworkNode {
@@ -93,16 +98,22 @@ export function networkLayout(
   // arrangement is both faster and more informative, so fall back rather than
   // producing an expensive blob.
   const mode: NetworkLayoutMode =
-    o.mode === 'force' && n > MAX_FORCE_NODES ? 'grouped' : o.mode
+    o.mode === 'ego' && o.focus === undefined
+      ? 'force'
+      : o.mode === 'force' && n > MAX_FORCE_NODES
+        ? 'grouped'
+        : o.mode
 
   const positions =
     n === 0
       ? { x: new Float64Array(0), y: new Float64Array(0) }
-      : mode === 'circular'
-        ? circularPositions(graph, o.radius)
-        : mode === 'grouped'
-          ? groupedPositions(graph, groups, o.radius)
-          : forcePositions(graph, o)
+      : mode === 'ego' && o.focus !== undefined
+        ? egoPositions(graph, o.focus, o.radius)
+        : mode === 'circular'
+          ? circularPositions(graph, o.radius)
+          : mode === 'grouped'
+            ? groupedPositions(graph, groups, o.radius)
+            : forcePositions(graph, o)
 
   const nodes: NetworkNode[] = graph.nodes.map((node, index) => ({
     index,
@@ -123,6 +134,85 @@ export function networkLayout(
 
   const extent = nodes.reduce((max, node) => Math.max(max, Math.hypot(node.x, node.y)), 1)
   return { mode, nodes, edges, extent, groupCount }
+}
+
+/**
+ * One protein at the centre, its partners on the first ring, theirs on the second.
+ *
+ * This is the answer to "show me everything this protein interacts with". Radius is
+ * graph distance from the focus, so the picture states how each protein is reached
+ * rather than leaving it to be traced; within a ring, proteins are ordered by the
+ * partner that introduced them, keeping each sub-branch contiguous.
+ */
+function egoPositions(graph: PpiGraph, focus: number, radius: number) {
+  const x = new Float64Array(graph.order)
+  const y = new Float64Array(graph.order)
+
+  // Breadth-first from the focus: distance is the ring, and the order of discovery
+  // keeps each first-ring partner's own neighbours adjacent to it.
+  const distance = new Array<number>(graph.order).fill(-1)
+  const rings: number[][] = []
+  distance[focus] = 0
+  rings.push([focus])
+
+  let frontier = [focus]
+  while (frontier.length > 0) {
+    const next: number[] = []
+    for (const node of frontier) {
+      for (const neighbour of graph.adjacency[node]!) {
+        if (distance[neighbour] === -1) {
+          distance[neighbour] = distance[node]! + 1
+          next.push(neighbour)
+        }
+      }
+    }
+    if (next.length > 0) rings.push(next)
+    frontier = next
+  }
+
+  // Anything unreachable — a filter can disconnect the graph — goes to an outer ring
+  // rather than being dropped or piled on the origin.
+  const unreachable = [...Array(graph.order).keys()].filter((i) => distance[i] === -1)
+  if (unreachable.length > 0) rings.push(unreachable)
+
+  const spacing = radius / Math.max(1, rings.length)
+  // Minimum arc between adjacent nodes. Below this they merge into a solid band and
+  // the ring stops being readable as individual proteins.
+  const nodeSpacing = 13
+
+  rings.forEach((ring, level) => {
+    if (level === 0) {
+      x[ring[0]!] = 0
+      y[ring[0]!] = 0
+      return
+    }
+
+    // A hub can have a thousand partners, which will not fit on one circle at any
+    // legible spacing. Split the ring into concentric bands within its own level
+    // rather than letting the nodes overlap — radius still means graph distance,
+    // just with a little thickness.
+    const inner = spacing * level
+    const capacity = Math.max(1, Math.floor((2 * Math.PI * inner) / nodeSpacing))
+    const bands = Math.max(1, Math.ceil(ring.length / capacity))
+    const bandGap = bands === 1 ? 0 : (spacing * 0.7) / bands
+
+    let placed = 0
+    for (let band = 0; band < bands && placed < ring.length; band += 1) {
+      const r = inner + band * bandGap
+      const bandCapacity = Math.max(1, Math.floor((2 * Math.PI * r) / nodeSpacing))
+      const count = Math.min(bandCapacity, ring.length - placed)
+      for (let i = 0; i < count; i += 1) {
+        const node = ring[placed + i]!
+        // Offset alternate bands by half a slot so nodes do not line up radially.
+        const angle =
+          ((i + (band % 2) * 0.5) / count) * Math.PI * 2 - Math.PI / 2
+        x[node] = Math.cos(angle) * r
+        y[node] = Math.sin(angle) * r
+      }
+      placed += count
+    }
+  })
+  return { x, y }
 }
 
 /** Everything on one ring, ordered by a traversal so neighbours sit together. */
@@ -242,7 +332,7 @@ export const MAX_FORCE_NODES = 1200
  */
 function forcePositions(
   graph: PpiGraph,
-  o: Required<Omit<NetworkLayoutOptions, 'groups'>> & { groups?: readonly number[] },
+  o: Required<Pick<NetworkLayoutOptions, 'iterations' | 'seed' | 'radius' | 'gravity'>>,
 ) {
   const n = graph.order
   const x = new Float64Array(n)

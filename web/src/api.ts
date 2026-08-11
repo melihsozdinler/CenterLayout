@@ -53,6 +53,11 @@ import {
 import { buildCenterGraph, type CenterGraphQuery } from './views/center-graph'
 import { PpiGraph } from './algo/graph'
 import {
+  findProteins,
+  proteinDetail,
+  type ProteinDetail,
+} from './model/protein'
+import {
   applySetOperation,
   compareDatasets,
   mergeDatasets,
@@ -290,6 +295,17 @@ export interface ProLiVisApi {
    * convergence, so the same graph always draws the same picture.
    */
   networkLayout(graph: PpiGraph, options?: NetworkLayoutOptions): NetworkLayoutResult
+  /**
+   * One protein and every interaction it takes part in, with the evidence behind
+   * each: which publications, which methods, over which years.
+   */
+  protein(datasetId: string, biogridId: number): Promise<ProteinDetail | null>
+  /** Search proteins by symbol or synonym. */
+  findProteins(
+    datasetId: string,
+    query: string,
+    limit?: number,
+  ): Promise<{ biogridId: number; symbol: string; organism: string | null }[]>
   /** The network as a drawable scene, coloured by trust, module or degree. */
   networkScene(layout: NetworkLayoutResult, options?: NetworkSceneOptions): Scene
   /** The adjacency matrix as a drawable scene. */
@@ -519,6 +535,14 @@ export const api: ProLiVisApi = {
   toSvg: (scene, title) => sceneToSvg(scene, title),
 
   networkLayout: (graph, options) => networkLayout(graph, options ?? {}),
+
+  async protein(datasetId, biogridId) {
+    return proteinDetail(await getEngine(), datasetId, biogridId)
+  },
+
+  async findProteins(datasetId, query, limit) {
+    return findProteins(await getEngine(), datasetId, query, limit)
+  },
 
   networkScene: (layout, options) => networkScene(layout, options ?? {}),
 

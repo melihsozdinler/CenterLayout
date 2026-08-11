@@ -14,6 +14,7 @@ import type { NetworkLayoutResult, NetworkLayoutMode } from '../views/network-la
 import type { MatrixView, MatrixOrdering } from '../views/matrix'
 import type { NetworkColouring } from '../views/render/network-scene'
 import type { ComparisonResult } from '../compare/compare'
+import type { ProteinDetail } from '../model/protein'
 import type { IngestProgress } from '../data/ingest'
 import type { ZipEntry } from '../data/zip'
 
@@ -26,6 +27,12 @@ export interface NetworkSettings {
   readonly colourBy: NetworkColouring
   readonly ordering: MatrixOrdering
   readonly physicalOnly: boolean
+  /** Drop proteins with fewer than this many partners. */
+  readonly minDegree: number
+  /** Keep only this many best-supported interactions. */
+  readonly maxEdges: number
+  /** Hops shown around a focused protein. */
+  readonly focusDepth: number
 }
 
 export interface LayoutSettings {
@@ -55,6 +62,11 @@ interface AppState {
   comparison: ComparisonResult | null
   compareWith: string | null
 
+  /** BioGRID gene id the view is centred on, if any. */
+  focusId: number | null
+  focus: ProteinDetail | null
+  searchResults: { biogridId: number; symbol: string; organism: string | null }[]
+
   busy: string | null
   progress: IngestProgress | null
   error: string | null
@@ -79,6 +91,9 @@ interface AppState {
   selectNetworkNode: (index: number | null) => void
   compareTo: (datasetId: string | null) => Promise<void>
   mergeWith: (datasetId: string) => Promise<void>
+  /** Centre the network on one protein and list its interactions. */
+  focusProtein: (biogridId: number | null) => Promise<void>
+  searchProteins: (query: string) => Promise<void>
 }
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
@@ -107,12 +122,18 @@ export const useApp = create<AppState>((set, get) => ({
     colourBy: 'trust',
     ordering: 'cluster',
     physicalOnly: true,
+    minDegree: 1,
+    maxEdges: 4000,
+    focusDepth: 1,
   },
   networkStats: null,
   selectedNodeIndex: null,
 
   comparison: null,
   compareWith: null,
+  focusId: null,
+  focus: null,
+  searchResults: [],
   busy: null,
   progress: null,
   error: null,
@@ -207,6 +228,39 @@ export const useApp = create<AppState>((set, get) => ({
 
   selectNetworkNode: (index) =>
     set({ selectedNodeIndex: get().selectedNodeIndex === index ? null : index }),
+
+  async focusProtein(biogridId) {
+    const dataset = get().activeDatasetId
+    if (dataset === null) return
+    if (biogridId === null) {
+      set({ focusId: null, focus: null })
+      await rebuildLayout(set, get)
+      return
+    }
+    set({ busy: 'Loading interactions' })
+    try {
+      const focus = await api.protein(dataset, biogridId)
+      set({ focus, focusId: biogridId, view: 'network', error: null })
+    } catch (e) {
+      set({ error: message(e) })
+    } finally {
+      set({ busy: null })
+    }
+    await rebuildLayout(set, get)
+  },
+
+  async searchProteins(query) {
+    const dataset = get().activeDatasetId
+    if (dataset === null || query.trim() === '') {
+      set({ searchResults: [] })
+      return
+    }
+    try {
+      set({ searchResults: await api.findProteins(dataset, query, 12) })
+    } catch {
+      set({ searchResults: [] })
+    }
+  },
 
   async compareTo(datasetId) {
     const active = get().activeDatasetId
@@ -320,15 +374,42 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
       return
     }
 
-    const graph = await api.graph(query, { minScore: networkSettings.minTrust })
-    const network = api.networkLayout(graph, { mode: networkSettings.mode })
+    const { focusId } = get()
+
+    // Focusing a protein means "show me everything this interacts with", so the trust
+    // threshold does not apply: filtering here can empty the canvas while the panel
+    // still lists forty partners, which reads as a bug rather than as a filter. Trust
+    // stays visible as edge colour and width instead.
+    const full = await api.graph(query, {
+      minScore: focusId === null ? networkSettings.minTrust : 0,
+    })
+
+    // Density limits are applied *within* the neighbourhood — capping globally first
+    // would often remove the focus itself.
+    const focusIndex = focusId === null ? undefined : full.index(focusId)
+    const scoped =
+      focusIndex === undefined
+        ? full
+        : full.induced(full.neighbourhood(focusIndex, networkSettings.focusDepth))
+
+    const graph = scoped.reduce({
+      maxEdges: networkSettings.maxEdges,
+      ...(focusIndex === undefined ? { minDegree: networkSettings.minDegree } : {}),
+    })
+
+    const centre = focusId === null ? undefined : graph.index(focusId)
+    const network = api.networkLayout(graph, {
+      mode: centre === undefined ? networkSettings.mode : 'ego',
+      ...(centre === undefined ? {} : { focus: centre }),
+    })
     set({
       network,
       matrix: null,
       networkStats: {
         nodes: network.nodes.length,
         edges: network.edges.length,
-        hidden: scored.length - kept.length,
+        // Focusing ignores the threshold, so nothing is hidden by it.
+        hidden: focusId === null ? scored.length - kept.length : 0,
       },
       error: null,
     })

@@ -26,6 +26,7 @@ export function NetworkView() {
   const colourBy = useApp((s) => s.networkSettings.colourBy)
   const selected = useApp((s) => s.selectedNodeIndex)
   const selectNode = useApp((s) => s.selectNetworkNode)
+  const focusProtein = useApp((s) => s.focusProtein)
 
   const [viewport, setViewport] = useState({ scale: 0.6, offsetX: 0, offsetY: 0 })
   const [hovered, setHovered] = useState<NetworkNode | null>(null)
@@ -158,7 +159,12 @@ export function NetworkView() {
           if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) >= 4) return
           const world = toWorld(e.clientX, e.clientY)
           const node = networkNodeAt(network, world.x, world.y)
-          selectNode(node?.index ?? null)
+          if (!node) {
+            selectNode(null)
+            return
+          }
+          // A click means "show me this protein", not merely "highlight it".
+          void focusProtein(node.id)
         }}
         onWheel={(e) => {
           const factor = Math.pow(2, -e.deltaY / 400)

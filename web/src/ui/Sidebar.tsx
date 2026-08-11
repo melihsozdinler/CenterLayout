@@ -1,10 +1,12 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useApp } from './store'
 import { api } from '../api'
+import { ProteinPanel } from './ProteinPanel'
 
 export function Sidebar() {
   const state = useApp()
   const fileInput = useRef<HTMLInputElement>(null)
+  const [search, setSearch] = useState('')
 
   return (
     <>
@@ -143,6 +145,41 @@ export function Sidebar() {
         </section>
       )}
 
+      {state.activeDatasetId && (
+        <section className="panel">
+          <h2>Find a protein</h2>
+          <input
+            type="search"
+            placeholder="Gene symbol, e.g. TP53"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              void state.searchProteins(e.target.value)
+            }}
+          />
+          {state.searchResults.length > 0 && (
+            <ul className="search-results">
+              {state.searchResults.map((hit) => (
+                <li key={hit.biogridId}>
+                  <button
+                    onClick={() => {
+                      setSearch('')
+                      void state.searchProteins('')
+                      void state.focusProtein(hit.biogridId)
+                    }}
+                  >
+                    <strong>{hit.symbol}</strong>
+                    <span className="hint">{hit.organism ?? ''}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <ProteinPanel />
+
       {state.view !== 'center' && state.activeDatasetId && (
         <section className="panel">
           <h2>Network</h2>
@@ -232,6 +269,60 @@ export function Sidebar() {
             />
             Physical interactions only
           </label>
+
+          <h2 style={{ marginTop: 16 }}>Density</h2>
+
+          {state.focusId !== null ? (
+            <label>
+              Hops from {state.focus?.symbol ?? 'the centre'}:{' '}
+              <strong>{state.networkSettings.focusDepth}</strong>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={1}
+                value={state.networkSettings.focusDepth}
+                onChange={(e) =>
+                  void state.updateNetwork({ focusDepth: Number(e.target.value) })
+                }
+              />
+            </label>
+          ) : (
+            <label>
+              Minimum partners per protein:{' '}
+              <strong>{state.networkSettings.minDegree}</strong>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                step={1}
+                value={state.networkSettings.minDegree}
+                onChange={(e) =>
+                  void state.updateNetwork({ minDegree: Number(e.target.value) })
+                }
+              />
+            </label>
+          )}
+
+          <label>
+            Interactions drawn:{' '}
+            <strong>{state.networkSettings.maxEdges.toLocaleString()}</strong>
+            <input
+              type="range"
+              min={200}
+              max={20000}
+              step={200}
+              value={state.networkSettings.maxEdges}
+              onChange={(e) =>
+                void state.updateNetwork({ maxEdges: Number(e.target.value) })
+              }
+            />
+          </label>
+          <p className="hint">
+            Keeps the best-supported interactions. A protein can look unconnected because
+            its interactions lost a global race, so prefer the trust threshold when you
+            want an honest cut.
+          </p>
         </section>
       )}
 

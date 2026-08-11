@@ -457,3 +457,95 @@ table.compare td {
 .canvas-notice span {
   color: var(--fg-muted);
 }
+
+.panel input[type='search'] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.search-results,
+.partners {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.search-results button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+
+.protein-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.protein-head h2 {
+  margin: 0;
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg);
+}
+
+.partners {
+  max-height: 340px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.partner-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 5px 2px;
+  font-size: 12px;
+}
+
+.partner-row:hover {
+  background: var(--bg);
+}
+
+.partner-name em {
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+
+.partner-counts {
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.partner-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 2px 10px;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border);
+}
+
+.partner-detail div {
+  display: flex;
+  flex-direction: column;
+}
+
+.partner-detail strong {
+  color: var(--fg-muted);
+  font-weight: 500;
+}

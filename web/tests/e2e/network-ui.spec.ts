@@ -58,7 +58,7 @@ test('raising the trust threshold shrinks the network', async ({ page }) => {
     )
 
   const before = await count()
-  await page.locator('input[type="range"]').fill('0.4')
+  await page.getByRole('slider', { name: /Minimum trust/ }).fill('0.4')
   await expect.poll(count, { timeout: 60_000 }).toBeLessThan(before)
 })
 

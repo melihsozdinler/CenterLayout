@@ -151,6 +151,86 @@ export class PpiGraph {
     return PpiGraph.fromPairs(pairs)
   }
 
+  /**
+   * Reduce the graph to what a view can usefully draw.
+   *
+   * Density is the thing that decides whether a network picture informs or just fills
+   * the canvas, and the three knobs here fail in different ways, so they are separate
+   * rather than one "detail" slider:
+   *
+   *   - `maxEdges` keeps the best-supported interactions. Honest about ranking, but it
+   *     can leave a protein looking unconnected because its edges lost a global race.
+   *   - `minDegree` drops the periphery. A PPI network is mostly degree-1 leaves, so
+   *     this is usually the most effective single control.
+   *   - `keep` restricts to an explicit set, which is how the ego view works.
+   *
+   * Isolated nodes are removed afterwards: a node with no remaining edges is noise in
+   * a network view, however interesting it was before the filter.
+   */
+  reduce(options: {
+    maxEdges?: number
+    minDegree?: number
+    keep?: ReadonlySet<number>
+  }): PpiGraph {
+    let edges = this.edges.filter(
+      (e) =>
+        options.keep === undefined ||
+        (options.keep.has(e.source) && options.keep.has(e.target)),
+    )
+
+    if (options.maxEdges !== undefined && edges.length > options.maxEdges) {
+      edges = [...edges]
+        .sort((a, b) => b.weight - a.weight || (a.pairKey < b.pairKey ? -1 : 1))
+        .slice(0, options.maxEdges)
+    }
+
+    if (options.minDegree !== undefined && options.minDegree > 1) {
+      // Iterate: removing a leaf can drop its neighbour below the threshold too, and
+      // a single pass would leave a fringe of newly-underconnected nodes behind.
+      for (;;) {
+        const degree = new Map<number, number>()
+        for (const e of edges) {
+          degree.set(e.source, (degree.get(e.source) ?? 0) + 1)
+          degree.set(e.target, (degree.get(e.target) ?? 0) + 1)
+        }
+        const survivors = edges.filter(
+          (e) =>
+            (degree.get(e.source) ?? 0) >= options.minDegree! &&
+            (degree.get(e.target) ?? 0) >= options.minDegree!,
+        )
+        if (survivors.length === edges.length) break
+        edges = survivors
+      }
+    }
+
+    const keptNodes = new Set<number>()
+    for (const e of edges) {
+      keptNodes.add(e.source)
+      keptNodes.add(e.target)
+    }
+    return this.induced(keptNodes)
+  }
+
+  /** Dense indices within `depth` hops of a node, including the node itself. */
+  neighbourhood(index: number, depth: number): Set<number> {
+    const seen = new Set<number>([index])
+    let frontier = [index]
+    for (let step = 0; step < depth; step += 1) {
+      const next: number[] = []
+      for (const node of frontier) {
+        for (const neighbour of this.adjacency[node] ?? []) {
+          if (!seen.has(neighbour)) {
+            seen.add(neighbour)
+            next.push(neighbour)
+          }
+        }
+      }
+      frontier = next
+      if (frontier.length === 0) break
+    }
+    return seen
+  }
+
   /** Edges as BioGRID id pairs with their weights, for export. */
   toEdgeList(): { source: number; target: number; weight: number }[] {
     return this.edges.map((e) => ({
