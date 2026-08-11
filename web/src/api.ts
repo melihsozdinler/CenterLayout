@@ -36,6 +36,29 @@ import {
 } from './enrich/enrich'
 import { loadContactEmail, saveContactEmail } from './enrich/openalex'
 import {
+  DEFAULT_PRESET,
+  getPreset,
+  PRESETS,
+  TERM_DESCRIPTIONS,
+  type TermDescription,
+  type TrustConfig,
+} from './trust/model'
+import {
+  gatherEvidence,
+  scoreWithIdentity,
+  type EvidenceQuery,
+  type GatheredEvidence,
+  type ScoredPair,
+} from './trust/score'
+import {
+  ablate,
+  calibrate,
+  parseReferenceSet,
+  type AblationRow,
+  type CalibrationResult,
+  type ReferenceSet,
+} from './trust/calibrate'
+import {
   BioGridRestClient,
   clearAccessKey,
   ingestFromRest,
@@ -111,6 +134,43 @@ export interface ProLiVisApi {
   /** Optional contact address; puts OpenAlex requests in their faster polite pool. */
   contactEmail(): string | null
   setContactEmail(email: string | null): void
+
+  // --- citation trust -------------------------------------------------------
+  /** The shipped scoring presets, keyed by name. */
+  trustPresets(): Readonly<Record<string, TrustConfig>>
+  /** What each term measures and why it is in the model. */
+  trustTerms(): readonly TermDescription[]
+  /**
+   * Score a dataset's interactions. Pass a preset name or a full configuration;
+   * omitting it uses the documented default.
+   */
+  score(query: EvidenceQuery, config?: string | TrustConfig): Promise<ScoredPair[]>
+  /**
+   * Gather evidence once so weights can be changed without re-querying. Feed the
+   * result to `rescore` to re-weight interactively.
+   */
+  gather(query: EvidenceQuery, config?: string | TrustConfig): Promise<GatheredEvidence>
+  /** Re-score already-gathered evidence under a different configuration. */
+  rescore(gathered: GatheredEvidence, config?: string | TrustConfig): ScoredPair[]
+  /** Measure a configuration against a reference set of known interactions. */
+  calibrate(
+    scored: readonly ScoredPair[],
+    reference: ReferenceSet,
+  ): CalibrationResult
+  /** Leave-one-term-out ablation, showing which terms actually earn their weight. */
+  ablate(
+    gathered: GatheredEvidence,
+    reference: ReferenceSet,
+    config?: string | TrustConfig,
+  ): AblationRow[]
+  /** Parse a user-supplied reference set of gene-symbol pairs. */
+  referenceSet(name: string, text: string): ReferenceSet
+}
+
+/** Accept either a preset name or a full configuration. */
+function resolveConfig(config?: string | TrustConfig): TrustConfig {
+  if (config === undefined) return getPreset(DEFAULT_PRESET)
+  return typeof config === 'string' ? getPreset(config) : config
 }
 
 /** Build a REST client from the stored key, or fail with a clear message. */
@@ -208,6 +268,29 @@ export const api: ProLiVisApi = {
   contactEmail: () => loadContactEmail(),
 
   setContactEmail: (email) => saveContactEmail(email),
+
+  trustPresets: () => PRESETS,
+
+  trustTerms: () => TERM_DESCRIPTIONS,
+
+  async score(query, config) {
+    const resolved = resolveConfig(config)
+    const gathered = await gatherEvidence(await getEngine(), query, resolved)
+    return scoreWithIdentity(gathered, resolved)
+  },
+
+  async gather(query, config) {
+    return gatherEvidence(await getEngine(), query, resolveConfig(config))
+  },
+
+  rescore: (gathered, config) => scoreWithIdentity(gathered, resolveConfig(config)),
+
+  calibrate: (scored, reference) => calibrate(scored, reference),
+
+  ablate: (gathered, reference, config) =>
+    ablate(gathered, resolveConfig(config), reference),
+
+  referenceSet: (name, text) => parseReferenceSet(name, text),
 }
 
 declare global {
