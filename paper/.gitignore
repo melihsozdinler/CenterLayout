@@ -1,0 +1,3 @@
+# Raster previews are derived from the committed SVGs by the figure pipeline.
+figures/*.png
+!figures/interface.png

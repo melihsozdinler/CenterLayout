@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "figures": "playwright test --config playwright.figures.config.ts"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",

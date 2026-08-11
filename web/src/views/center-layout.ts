@@ -70,8 +70,18 @@ export interface CenterLayoutOptions {
    */
   readonly multiMethod?: 'circular-mean' | 'duplicate'
   readonly systemRingRadius?: number
+  /** Inner radius of the publication band. */
   readonly publicationRingRadius?: number
-  /** Radial distance between successive publication rings. */
+  /**
+   * Outer bound of the publication band.
+   *
+   * Rows are packed to fit inside it rather than marching outward indefinitely.
+   * Without a bound, a method with a thousand publications pushes its fan out to many
+   * times the method ring's radius, and every other method collapses into an
+   * unreadable sliver near the centre — which is exactly what a real release does.
+   */
+  readonly publicationBandOuter?: number
+  /** Maximum radial distance between successive publication rows. */
   readonly ringSpacing?: number
   readonly organismRadius?: number
   readonly systemNodeRadius?: [min: number, max: number]
@@ -88,12 +98,13 @@ const DEFAULTS = {
   aggregateBelow: 0,
   multiMethod: 'circular-mean',
   systemRingRadius: 260,
-  publicationRingRadius: 520,
-  ringSpacing: 52,
+  publicationRingRadius: 430,
+  publicationBandOuter: 1000,
+  ringSpacing: 46,
   organismRadius: 34,
   systemNodeRadius: [14, 34] as [number, number],
   publicationNodeRadius: [5, 16] as [number, number],
-  minSectorFraction: 0.012,
+  minSectorFraction: 0.022,
   sectorPadding: 0.012,
   startAngle: -Math.PI / 2,
 } satisfies Required<CenterLayoutOptions>
@@ -496,27 +507,72 @@ function placePublications(
     if (!targets || targets.length === 0) continue
 
     const width = sector.endAngle - sector.startAngle
-    const arc = width * o.publicationRingRadius
-    const columns = Math.max(1, Math.floor(arc / slotSize))
+    const { rows, spacing } = fitRows(targets.length, width, slotSize, o)
 
-    targets.forEach((target, index) => {
-      const row = Math.floor(index / columns)
-      const column = index % columns
-      const inThisRow = Math.min(columns, targets.length - row * columns)
-      // Spread the row evenly across the sector, centring a partial last row.
-      const t = (column + 0.5) / inThisRow
-      placements.push({
-        publication: target.publication,
-        id: target.id,
-        angle: sector.startAngle + t * width,
-        distance: o.publicationRingRadius + row * o.ringSpacing,
-        ring: row + 2,
-        systemsShown: target.systemsShown,
-      })
-    })
+    // Capacity grows with radius: an outer row spans a longer arc than an inner one,
+    // so it holds more publications. Ignoring that wastes the outer band and forces
+    // far more rows than necessary.
+    let placed = 0
+    for (let row = 0; row < rows && placed < targets.length; row += 1) {
+      const distance = o.publicationRingRadius + row * spacing
+      const capacity = columnsAt(width, distance, slotSize)
+      const inThisRow = Math.min(capacity, targets.length - placed)
+
+      for (let column = 0; column < inThisRow; column += 1) {
+        const target = targets[placed + column]
+        if (!target) continue
+        // Spread evenly across the sector, centring a partial row.
+        const t = (column + 0.5) / inThisRow
+        placements.push({
+          publication: target.publication,
+          id: target.id,
+          angle: sector.startAngle + t * width,
+          distance,
+          ring: row + 2,
+          systemsShown: target.systemsShown,
+        })
+      }
+      placed += inThisRow
+    }
   }
 
   return placements
+}
+
+/** How many publications fit on one row of a sector at a given radius. */
+function columnsAt(width: number, radius: number, slotSize: number): number {
+  return Math.max(1, Math.floor((width * radius) / slotSize))
+}
+
+/**
+ * Choose how many rows to use, and how far apart, so that a sector's publications fit
+ * inside the band.
+ *
+ * Rows are searched upward until capacity suffices, with the spacing shrinking to keep
+ * the outermost row within `publicationBandOuter`. Only if the band cannot hold them
+ * even at the tightest spacing does the fan extend past it — better an overflowing
+ * sector than publications silently dropped.
+ */
+function fitRows(
+  count: number,
+  width: number,
+  slotSize: number,
+  o: Required<CenterLayoutOptions>,
+): { rows: number; spacing: number } {
+  const inner = o.publicationRingRadius
+  const span = Math.max(0, o.publicationBandOuter - inner)
+
+  for (let rows = 1; rows <= 200; rows += 1) {
+    const spacing = rows <= 1 ? o.ringSpacing : Math.min(o.ringSpacing, span / (rows - 1))
+    let capacity = 0
+    for (let row = 0; row < rows; row += 1) {
+      capacity += columnsAt(width, inner + row * spacing, slotSize)
+    }
+    if (capacity >= count) return { rows, spacing }
+  }
+
+  // Beyond 200 rows the sector is hopeless anyway; pack at the tightest spacing.
+  return { rows: 200, spacing: span / 199 }
 }
 
 /** The sector, among a publication's own methods, closest to a given direction. */

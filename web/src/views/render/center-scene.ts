@@ -53,6 +53,13 @@ export function centerScene(
   const byId = new Map(layout.nodes.map((n) => [n.id, n]))
   const items: SceneItem[] = []
 
+  // Edge ink has to fall as the graph grows. At a few hundred publications the default
+  // weight reads as structure; at two thousand it reads as a red fog that hides the
+  // nodes underneath.
+  const edgeCount = layout.edges.length
+  const density = Math.min(1, 400 / Math.max(1, edgeCount))
+  const publicationEdgeWidth = 0.35 + 0.45 * density
+
   const dimmed = (id: string) => highlight !== undefined && !highlight.has(id)
 
   // --- edges, drawn first so nodes sit on top -------------------------------
@@ -72,7 +79,7 @@ export function centerScene(
       stroke: emphasised ? style.edgeHighlight : style.edge,
       // Spokes from the centre carry more meaning than the many publication edges,
       // so they are drawn heavier.
-      width: edge.kind === 'organism-system' ? 2.5 : 0.8,
+      width: edge.kind === 'organism-system' ? 2.5 : publicationEdgeWidth,
     })
   }
 
@@ -97,15 +104,20 @@ export function centerScene(
   // --- labels ---------------------------------------------------------------
   const organism = byId.get(ORGANISM_ID)
   if (organism) {
+    // Organism names run long ('Severe acute respiratory syndrome coronavirus 2').
+    // Roughly half the font size per character; anything that will not fit inside the
+    // node goes underneath it rather than spilling across the middle of the figure.
+    const fontSize = 15
+    const fits = organism.label.length * fontSize * 0.5 < organism.radius * 1.9
     items.push({
       kind: 'text',
       x: 0,
-      y: 0,
+      y: fits ? 0 : organism.radius + fontSize,
       text: organism.label,
-      fill: '#ffffff',
-      fontSize: 15,
+      fill: fits ? '#ffffff' : style.text,
+      fontSize,
       anchor: 'middle',
-      weight: 600,
+      weight: 700,
     })
   }
 
