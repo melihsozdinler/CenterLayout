@@ -107,6 +107,28 @@ import {
   type CenterLayoutResult,
 } from './views/center-layout'
 import { centerScene, type CenterSceneOptions } from './views/render/center-scene'
+import {
+  buildMatrix,
+  buildUpSet,
+  type MatrixOptions,
+  type MatrixView,
+  type PairSystems,
+  type UpSetView,
+} from './views/matrix'
+import {
+  buildBipartite,
+  type BipartiteInput,
+  type BipartiteOptions,
+  type BipartiteView,
+} from './views/bipartite'
+import {
+  buildMethodChord,
+  buildTimeline,
+  type ChordView,
+  type TimelineOptions,
+  type TimelineRecord,
+  type TimelineView,
+} from './views/timeline'
 import { sceneToSvg, type Scene } from './views/render/scene'
 import {
   ablate,
@@ -238,6 +260,31 @@ export interface ProLiVisApi {
   centerScene(layout: CenterLayoutResult, options?: CenterSceneOptions): Scene
   /** Serialize a scene to standalone, editable SVG for a publication figure. */
   toSvg(scene: Scene, title?: string): string
+
+  // --- further views --------------------------------------------------------
+  /**
+   * Reorderable adjacency matrix. Shows far more interactions legibly than a
+   * node-link diagram, at the cost of making paths hard to trace — which is why both
+   * exist. The default ordering puts connected modules on the diagonal as blocks.
+   */
+  matrix(pairs: readonly ScoredPair[], options?: MatrixOptions): MatrixView
+  /**
+   * Which combinations of experimental methods actually co-occur. A Venn diagram
+   * cannot show more than four sets; this shows all of them.
+   */
+  upset(pairs: readonly PairSystems[], options?: { maxIntersections?: number; minCount?: number }): UpSetView
+  /** Publications against proteins, in lanes by experimental method. */
+  bipartite(input: BipartiteInput, options?: BipartiteOptions): BipartiteView
+  /**
+   * When each interaction entered the literature, and which have been reported once,
+   * long ago, and never revisited.
+   */
+  timeline(records: readonly TimelineRecord[], options?: TimelineOptions): TimelineView
+  /** How often two experimental methods support the same interaction. */
+  methodChord(
+    pairs: readonly { readonly systems: readonly string[] }[],
+    options?: { maxGroups?: number },
+  ): ChordView
 
   // --- graph structure ------------------------------------------------------
   /**
@@ -449,6 +496,16 @@ export const api: ProLiVisApi = {
   centerScene: (layout, options) => centerScene(layout, options ?? {}),
 
   toSvg: (scene, title) => sceneToSvg(scene, title),
+
+  matrix: (pairs, options) => buildMatrix(pairs, options ?? {}),
+
+  upset: (pairs, options) => buildUpSet(pairs, options ?? {}),
+
+  bipartite: (input, options) => buildBipartite(input, options ?? {}),
+
+  timeline: (records, options) => buildTimeline(records, options ?? {}),
+
+  methodChord: (pairs, options) => buildMethodChord(pairs, options ?? {}),
 
   async graph(query, options) {
     const resolved = resolveConfig(options?.config)
