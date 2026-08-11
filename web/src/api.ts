@@ -53,6 +53,34 @@ import {
 import { buildCenterGraph, type CenterGraphQuery } from './views/center-graph'
 import { PpiGraph } from './algo/graph'
 import {
+  applySetOperation,
+  compareDatasets,
+  mergeDatasets,
+  type ComparedEdge,
+  type ComparisonResult,
+  type ComparisonSide,
+  type CompareQuery,
+  type MergeResult,
+  type SetOperation,
+} from './compare/compare'
+import {
+  highLevelToRows,
+  pairsToRows,
+  toDelimited,
+  toGml,
+  toGraphml,
+  toSif,
+  type TabularFormat,
+} from './export/formats'
+import {
+  buildManifest,
+  checkReproducibility,
+  parseManifest,
+  serializeManifest,
+  type BuildManifestInput,
+  type SessionManifest,
+} from './export/manifest'
+import {
   biconnectedComponents,
   connectedComponents,
   kCores,
@@ -243,6 +271,49 @@ export interface ProLiVisApi {
   ): RemovalResult
   /** Contract the network to its modules, carrying trust mass on the links between. */
   contract(graph: PpiGraph, options?: ContractOptions): HighLevelGraph
+
+  // --- comparison and merging -----------------------------------------------
+  /**
+   * Compare two datasets edge by edge — across releases, organisms or queries —
+   * keeping which side asserted what.
+   */
+  compare(query: CompareQuery): Promise<ComparisonResult>
+  /** Apply a set operation to a comparison. */
+  setOperation(result: ComparisonResult, operation: SetOperation): ComparedEdge[]
+  /** Merge datasets into a new one, collapsing records present in more than one. */
+  merge(
+    sources: readonly ComparisonSide[],
+    options?: { label?: string },
+  ): Promise<MergeResult>
+
+  // --- export ---------------------------------------------------------------
+  /** Scored interactions as CSV or TSV, with every trust term as its own column. */
+  exportTable(pairs: readonly ScoredPair[], format?: TabularFormat): string
+  /** Cytoscape SIF. */
+  exportSif(pairs: readonly ScoredPair[]): string
+  /** GraphML, with trust and each term as typed edge attributes. */
+  exportGraphml(pairs: readonly ScoredPair[]): string
+  /** GML, for OGDF, Gephi and yEd. */
+  exportGml(pairs: readonly ScoredPair[]): string
+  /** A contracted graph as module and link tables. */
+  exportHighLevel(
+    graph: HighLevelGraph,
+    format?: TabularFormat,
+  ): { nodes: string; edges: string }
+  /** Arbitrary rows as CSV or TSV, for SQL console results. */
+  exportRows(rows: readonly Record<string, unknown>[], format?: TabularFormat): string
+
+  // --- session manifest -----------------------------------------------------
+  /** Record everything needed to reproduce the current figure. */
+  manifest(input: BuildManifestInput): SessionManifest
+  serializeManifest(manifest: SessionManifest): string
+  /** Parse a manifest, with warnings for anything this build does not understand. */
+  parseManifest(text: string): { manifest: SessionManifest; warnings: string[] }
+  /** Whether a manifest can be reproduced against what is currently loaded. */
+  checkManifest(
+    manifest: SessionManifest,
+    available: readonly DatasetSummary[],
+  ): { match: DatasetSummary | null; problems: string[] }
 }
 
 /** Accept either a preset name or a full configuration. */
@@ -399,6 +470,42 @@ export const api: ProLiVisApi = {
   removeEdges: (graph, strategy, options) => removeEdges(graph, strategy, options ?? {}),
 
   contract: (graph, options) => contract(graph, options ?? {}),
+
+  async compare(query) {
+    return compareDatasets(await getEngine(), query)
+  },
+
+  setOperation: (result, operation) => applySetOperation(result, operation),
+
+  async merge(sources, options) {
+    return mergeDatasets(await getEngine(), sources, options ?? {})
+  },
+
+  exportTable: (pairs, format) => toDelimited(pairsToRows(pairs), format ?? 'csv'),
+
+  exportSif: (pairs) => toSif(pairs),
+
+  exportGraphml: (pairs) => toGraphml(pairs),
+
+  exportGml: (pairs) => toGml(pairs),
+
+  exportHighLevel: (graph, format) => {
+    const rows = highLevelToRows(graph)
+    return {
+      nodes: toDelimited(rows.nodes, format ?? 'csv'),
+      edges: toDelimited(rows.edges, format ?? 'csv'),
+    }
+  },
+
+  exportRows: (rows, format) => toDelimited(rows, format ?? 'csv'),
+
+  manifest: (input) => buildManifest(input),
+
+  serializeManifest: (manifest) => serializeManifest(manifest),
+
+  parseManifest: (text) => parseManifest(text),
+
+  checkManifest: (manifest, available) => checkReproducibility(manifest, available),
 }
 
 declare global {
