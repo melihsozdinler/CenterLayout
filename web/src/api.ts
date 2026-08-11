@@ -51,6 +51,28 @@ import {
   type ScoredPair,
 } from './trust/score'
 import { buildCenterGraph, type CenterGraphQuery } from './views/center-graph'
+import { PpiGraph } from './algo/graph'
+import {
+  biconnectedComponents,
+  connectedComponents,
+  kCores,
+  maximalCliques,
+  type BiconnectedResult,
+  type CliqueOptions,
+  type CliqueResult,
+  type Components,
+  type CoreResult,
+} from './algo/structure'
+import {
+  removeEdges,
+  type RemovalOptions,
+  type RemovalResult,
+} from './algo/removal'
+import {
+  contract,
+  type ContractOptions,
+  type HighLevelGraph,
+} from './algo/contract'
 import {
   centerLayout,
   type CenterLayoutOptions,
@@ -188,6 +210,39 @@ export interface ProLiVisApi {
   centerScene(layout: CenterLayoutResult, options?: CenterSceneOptions): Scene
   /** Serialize a scene to standalone, editable SVG for a publication figure. */
   toSvg(scene: Scene, title?: string): string
+
+  // --- graph structure ------------------------------------------------------
+  /**
+   * Build the interaction graph for a query, optionally keeping only edges above a
+   * trust threshold. This is the object every structural algorithm operates on.
+   */
+  graph(
+    query: EvidenceQuery,
+    options?: { minScore?: number; config?: string | TrustConfig },
+  ): Promise<PpiGraph>
+  /** Disjoint pieces of the network, largest first. */
+  components(graph: PpiGraph): Components
+  /**
+   * Biconnected components, articulation points and bridges: the proteins and single
+   * interactions whose removal would break the network apart.
+   */
+  modules(graph: PpiGraph): BiconnectedResult
+  /** k-core decomposition — the standard first cut at the dense part. */
+  cores(graph: PpiGraph): CoreResult
+  /** Maximal cliques: the graph-theoretic shadow of protein complexes. */
+  cliques(graph: PpiGraph, options?: CliqueOptions): CliqueResult
+  /**
+   * Remove edges one at a time and record what happens. `trust-ascending` peels the
+   * least-supported evidence first, which asks what survives if you only believe the
+   * data; `betweenness` is the classical Girvan-Newman order.
+   */
+  removeEdges(
+    graph: PpiGraph,
+    strategy: RemovalResult['strategy'],
+    options?: RemovalOptions,
+  ): RemovalResult
+  /** Contract the network to its modules, carrying trust mass on the links between. */
+  contract(graph: PpiGraph, options?: ContractOptions): HighLevelGraph
 }
 
 /** Accept either a preset name or a full configuration. */
@@ -323,6 +378,27 @@ export const api: ProLiVisApi = {
   centerScene: (layout, options) => centerScene(layout, options ?? {}),
 
   toSvg: (scene, title) => sceneToSvg(scene, title),
+
+  async graph(query, options) {
+    const resolved = resolveConfig(options?.config)
+    const gathered = await gatherEvidence(await getEngine(), query, resolved)
+    const scored = scoreWithIdentity(gathered, resolved)
+    return PpiGraph.fromPairs(scored, {
+      ...(options?.minScore === undefined ? {} : { minScore: options.minScore }),
+    })
+  },
+
+  components: (graph) => connectedComponents(graph),
+
+  modules: (graph) => biconnectedComponents(graph),
+
+  cores: (graph) => kCores(graph),
+
+  cliques: (graph, options) => maximalCliques(graph, options ?? {}),
+
+  removeEdges: (graph, strategy, options) => removeEdges(graph, strategy, options ?? {}),
+
+  contract: (graph, options) => contract(graph, options ?? {}),
 }
 
 declare global {
