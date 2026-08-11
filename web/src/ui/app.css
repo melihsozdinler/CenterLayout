@@ -379,3 +379,81 @@ button.primary {
   font-weight: 600;
   color: var(--fg);
 }
+
+/* --- view tabs ------------------------------------------------------------ */
+
+.view-tabs {
+  display: flex;
+  gap: 2px;
+  margin-left: 12px;
+}
+
+.view-tabs button {
+  padding: 4px 12px;
+  border-radius: 0;
+  border-right-width: 0;
+  font-size: 13px;
+}
+
+.view-tabs button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.view-tabs button:last-child {
+  border-radius: 0 6px 6px 0;
+  border-right-width: 1px;
+}
+
+.view-tabs button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.panel input[type='range'] {
+  width: 100%;
+  margin-top: 6px;
+}
+
+table.compare {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 4px;
+  font-size: 12px;
+}
+
+table.compare th {
+  text-align: left;
+  font-weight: 400;
+  color: var(--fg-muted);
+  padding: 3px 0;
+}
+
+table.compare td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  padding: 3px 0;
+}
+
+.canvas-notice {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  font-size: 12px;
+}
+
+.canvas-notice span {
+  color: var(--fg-muted);
+}

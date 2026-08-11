@@ -108,6 +108,17 @@ import {
 } from './views/center-layout'
 import { centerScene, type CenterSceneOptions } from './views/render/center-scene'
 import {
+  networkLayout,
+  type NetworkLayoutOptions,
+  type NetworkLayoutResult,
+} from './views/network-layout'
+import {
+  matrixScene,
+  networkScene,
+  type MatrixSceneOptions,
+  type NetworkSceneOptions,
+} from './views/render/network-scene'
+import {
   buildMatrix,
   buildUpSet,
   type MatrixOptions,
@@ -273,6 +284,16 @@ export interface ProLiVisApi {
    * cannot show more than four sets; this shows all of them.
    */
   upset(pairs: readonly PairSystems[], options?: { maxIntersections?: number; minCount?: number }): UpSetView
+  /**
+   * Lay out the protein-protein network itself. Deterministic in every mode: the
+   * force layout is seeded and runs a fixed number of iterations rather than to
+   * convergence, so the same graph always draws the same picture.
+   */
+  networkLayout(graph: PpiGraph, options?: NetworkLayoutOptions): NetworkLayoutResult
+  /** The network as a drawable scene, coloured by trust, module or degree. */
+  networkScene(layout: NetworkLayoutResult, options?: NetworkSceneOptions): Scene
+  /** The adjacency matrix as a drawable scene. */
+  matrixScene(matrix: MatrixView, options?: MatrixSceneOptions): Scene
   /** Publications against proteins, in lanes by experimental method. */
   bipartite(input: BipartiteInput, options?: BipartiteOptions): BipartiteView
   /**
@@ -496,6 +517,12 @@ export const api: ProLiVisApi = {
   centerScene: (layout, options) => centerScene(layout, options ?? {}),
 
   toSvg: (scene, title) => sceneToSvg(scene, title),
+
+  networkLayout: (graph, options) => networkLayout(graph, options ?? {}),
+
+  networkScene: (layout, options) => networkScene(layout, options ?? {}),
+
+  matrixScene: (matrix, options) => matrixScene(matrix, options ?? {}),
 
   matrix: (pairs, options) => buildMatrix(pairs, options ?? {}),
 

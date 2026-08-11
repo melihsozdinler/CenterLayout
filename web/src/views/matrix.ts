@@ -56,11 +56,27 @@ export function buildMatrix(
   const ordering = options.ordering ?? 'cluster'
   const maxNodes = options.maxNodes ?? 300
 
-  const graph = PpiGraph.fromPairs(pairs)
-  const order = orderNodes(graph, ordering)
+  const full = PpiGraph.fromPairs(pairs)
 
-  const truncated = order.length > maxNodes
-  const shown = order.slice(0, maxNodes)
+  // Select before ordering, and select by degree.
+  //
+  // Taking the first N of a traversal order instead — which is the obvious thing —
+  // yields whatever happened to be reached first, typically one hub's neighbourhood,
+  // and the matrix comes out as a single row against empty space. Keeping the busiest
+  // proteins gives the densest, most informative submatrix, and *then* seriating them
+  // puts their modules on the diagonal.
+  const truncated = full.order > maxNodes
+  const graph = truncated
+    ? full.induced(
+        new Set(
+          [...Array(full.order).keys()]
+            .sort((a, b) => full.degree(b) - full.degree(a) || a - b)
+            .slice(0, maxNodes),
+        ),
+      )
+    : full
+
+  const shown = orderNodes(graph, ordering)
   const position = new Map<number, number>()
   shown.forEach((node, index) => position.set(node, index))
 

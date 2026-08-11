@@ -26,7 +26,11 @@ export function Sidebar() {
         />
         <p className="hint">
           Download <code>BIOGRID-ORGANISM-LATEST.tab3.zip</code> from{' '}
-          <a href="https://downloads.thebiogrid.org/BioGRID" target="_blank" rel="noreferrer">
+          <a
+            href="https://downloads.thebiogrid.org/BioGRID"
+            target="_blank"
+            rel="noreferrer"
+          >
             thebiogrid.org
           </a>
           . Files are read on this machine and never uploaded.
@@ -124,7 +128,9 @@ export function Sidebar() {
           <select
             value={state.activeOrganismId ?? ''}
             onChange={(e) =>
-              void state.selectOrganism(e.target.value === '' ? null : Number(e.target.value))
+              void state.selectOrganism(
+                e.target.value === '' ? null : Number(e.target.value),
+              )
             }
           >
             <option value="">All organisms in this dataset</option>
@@ -137,7 +143,160 @@ export function Sidebar() {
         </section>
       )}
 
-      {state.layout && (
+      {state.view !== 'center' && state.activeDatasetId && (
+        <section className="panel">
+          <h2>Network</h2>
+
+          <label>
+            Minimum trust: <strong>{state.networkSettings.minTrust.toFixed(2)}</strong>
+            <input
+              type="range"
+              min={0}
+              max={0.8}
+              step={0.05}
+              value={state.networkSettings.minTrust}
+              onChange={(e) =>
+                void state.updateNetwork({ minTrust: Number(e.target.value) })
+              }
+            />
+          </label>
+          <p className="hint">
+            Most reported interactions rest on a single publication. Raising this shows
+            what survives if you only believe replicated evidence.
+          </p>
+
+          {state.view === 'network' && (
+            <>
+              <label>
+                Arrangement
+                <select
+                  value={state.networkSettings.mode}
+                  onChange={(e) =>
+                    void state.updateNetwork({
+                      mode: e.target.value as 'force' | 'grouped' | 'circular',
+                    })
+                  }
+                >
+                  <option value="force">Force-directed</option>
+                  <option value="grouped">Modules on a ring</option>
+                  <option value="circular">Single ring</option>
+                </select>
+              </label>
+
+              <label>
+                Colour by
+                <select
+                  value={state.networkSettings.colourBy}
+                  onChange={(e) =>
+                    void state.updateNetwork({
+                      colourBy: e.target.value as 'trust' | 'module' | 'degree',
+                    })
+                  }
+                >
+                  <option value="trust">Trust</option>
+                  <option value="module">Connected module</option>
+                  <option value="degree">Number of partners</option>
+                </select>
+              </label>
+            </>
+          )}
+
+          {state.view === 'matrix' && (
+            <label>
+              Row order
+              <select
+                value={state.networkSettings.ordering}
+                onChange={(e) =>
+                  void state.updateNetwork({
+                    ordering: e.target.value as
+                      'cluster' | 'degree' | 'core' | 'component' | 'alphabetical',
+                  })
+                }
+              >
+                <option value="cluster">Clustered (complexes on the diagonal)</option>
+                <option value="degree">Most partners first</option>
+                <option value="core">Densest first (k-core)</option>
+                <option value="component">By connected module</option>
+                <option value="alphabetical">Alphabetical</option>
+              </select>
+            </label>
+          )}
+
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={state.networkSettings.physicalOnly}
+              onChange={(e) =>
+                void state.updateNetwork({ physicalOnly: e.target.checked })
+              }
+            />
+            Physical interactions only
+          </label>
+        </section>
+      )}
+
+      {state.datasets.length > 1 && (
+        <section className="panel">
+          <h2>Compare &amp; merge</h2>
+          <select
+            value={state.compareWith ?? ''}
+            onChange={(e) =>
+              void state.compareTo(e.target.value === '' ? null : e.target.value)
+            }
+          >
+            <option value="">Compare with…</option>
+            {state.datasets
+              .filter((d) => d.datasetId !== state.activeDatasetId)
+              .map((d) => (
+                <option key={d.datasetId} value={d.datasetId}>
+                  {d.label}
+                </option>
+              ))}
+          </select>
+
+          {state.comparison && (
+            <>
+              <table className="compare">
+                <tbody>
+                  <tr>
+                    <th>Only in {state.comparison.summary.leftLabel}</th>
+                    <td>{state.comparison.summary.leftOnly.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Only in {state.comparison.summary.rightLabel}</th>
+                    <td>{state.comparison.summary.rightOnly.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>In both</th>
+                    <td>{state.comparison.summary.shared.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Agreement</th>
+                    <td>{(state.comparison.summary.jaccard * 100).toFixed(1)}%</td>
+                  </tr>
+                  {state.comparison.summary.sharedWithNewEvidence > 0 && (
+                    <tr>
+                      <th>Shared, new evidence</th>
+                      <td>
+                        {state.comparison.summary.sharedWithNewEvidence.toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <p className="hint">
+                Compared by BioGRID gene id. Merging keeps one copy of records present in
+                both, so replication counts are not inflated.
+              </p>
+              <button onClick={() => void state.mergeWith(state.compareWith!)}>
+                Merge into a new dataset
+              </button>
+            </>
+          )}
+        </section>
+      )}
+
+      {state.view === 'center' && state.layout && (
         <section className="panel">
           <h2>Layout</h2>
 

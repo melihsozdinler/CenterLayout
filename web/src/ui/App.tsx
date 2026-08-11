@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { APP_NAME, APP_VERSION } from '../app-info'
 import { CenterView } from './CenterView'
+import { NetworkView } from './NetworkView'
 import { Sidebar } from './Sidebar'
 import { useApp } from './store'
 
@@ -9,6 +10,9 @@ export function App() {
   const refreshDatasets = useApp((s) => s.refreshDatasets)
   const loadFile = useApp((s) => s.loadFile)
   const layout = useApp((s) => s.layout)
+  const view = useApp((s) => s.view)
+  const setView = useApp((s) => s.setView)
+  const networkStats = useApp((s) => s.networkStats)
   const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
@@ -38,7 +42,26 @@ export function App() {
         <span className="app-subtitle">
           Protein–Protein Interaction Literature Visualization
         </span>
-        {layout && (
+        <nav className="view-tabs" aria-label="View">
+          {(
+            [
+              ['center', 'Literature'],
+              ['network', 'Network'],
+              ['matrix', 'Matrix'],
+            ] as const
+          ).map(([kind, label]) => (
+            <button
+              key={kind}
+              className={view === kind ? 'active' : ''}
+              aria-pressed={view === kind}
+              onClick={() => void setView(kind)}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {view === 'center' && layout && (
           <span className="app-counts">
             {layout.nodes.filter((n) => n.kind === 'publication').length.toLocaleString()}{' '}
             publications ·{' '}
@@ -48,6 +71,14 @@ export function App() {
             methods
           </span>
         )}
+        {view !== 'center' && networkStats && (
+          <span className="app-counts">
+            {networkStats.nodes.toLocaleString()} proteins ·{' '}
+            {networkStats.edges.toLocaleString()} interactions
+            {networkStats.hidden > 0 &&
+              ` · ${networkStats.hidden.toLocaleString()} below threshold`}
+          </span>
+        )}
       </header>
 
       <aside className="app-sidebar" aria-label="Datasets and filters">
@@ -55,7 +86,7 @@ export function App() {
       </aside>
 
       <main className="app-main" aria-label="Visualization">
-        <CenterView />
+        {view === 'center' ? <CenterView /> : <NetworkView />}
       </main>
 
       <footer className="app-footer">
