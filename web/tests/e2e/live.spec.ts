@@ -135,3 +135,67 @@ test('the live evidence vocabulary is fully covered by our classification', asyn
   }
   expect(unknown).toEqual([])
 })
+
+/**
+ * Live OpenAlex verification. Needs no credentials — OpenAlex is open and CORS-enabled
+ * — but is gated so CI never depends on a third-party service:
+ *
+ *   PROLIVIS_LIVE=1 npx playwright test live
+ */
+test.describe('live OpenAlex', () => {
+  test.skip(!process.env['PROLIVIS_LIVE'], 'set PROLIVIS_LIVE=1 to run')
+
+  test('resolves real BioGRID publications against the real OpenAlex', async ({
+    page,
+  }) => {
+    test.setTimeout(600_000)
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const bytes = [
+      ...readFileSync(
+        fileURLToPath(new URL('../fixtures/biogrid-sample.tab3.zip', import.meta.url)),
+      ),
+    ]
+
+    await page.evaluate(async () => {
+      await window.prolivis!.wipe()
+      await window.prolivis!.sql('DELETE FROM literature')
+    })
+    const dataset = await page.evaluate(
+      async (b) =>
+        window.prolivis!.load(
+          new File([new Uint8Array(b)], 'BIOGRID-CORONAVIRUS-5.0.260.tab3.zip'),
+        ),
+      bytes,
+    )
+
+    const result = await page.evaluate(() => window.prolivis!.enrich())
+    const coverage = await page.evaluate(
+      (id) => window.prolivis!.coverage(id),
+      dataset.datasetId,
+    )
+    console.log(
+      `  live enrichment: ${result.fromOpenAlex} via OpenAlex, ` +
+        `${result.fromPubMed} via PubMed, ${result.notFound} unresolved ` +
+        `(of ${result.requested})`,
+    )
+    console.log(`  coverage: ${JSON.stringify(coverage)}`)
+
+    // Real coverage of a modern BioGRID release should be high; anything much below
+    // this means our identifier handling has drifted.
+    expect(coverage.enriched / coverage.publications).toBeGreaterThan(0.9)
+    expect(coverage.withCitations).toBeGreaterThan(0)
+    expect(coverage.withInstitutions).toBeGreaterThan(0)
+
+    const top = await page.evaluate(() =>
+      window.prolivis!.sql<Record<string, unknown>>(`
+        SELECT title, venue, year, citation_count::INTEGER AS citation_count
+          FROM literature
+         WHERE found AND citation_count IS NOT NULL
+         ORDER BY citation_count DESC
+         LIMIT 3`),
+    )
+    console.log(`  most-cited supporting papers: ${JSON.stringify(top)}`)
+    expect(Number(top[0]!['citation_count'])).toBeGreaterThan(10)
+  })
+})

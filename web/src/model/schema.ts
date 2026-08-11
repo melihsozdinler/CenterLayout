@@ -11,7 +11,7 @@
 import { CANONICAL_COLUMNS, type CanonicalColumn, type ResolvedHeader } from '../data/columns'
 
 /** Bump when a migration is needed; the engine drops and rebuilds on mismatch. */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /** Separator inside the canonical unordered-pair key. */
 export const PAIR_KEY_SEPARATOR = '~'
@@ -117,8 +117,7 @@ export const DDL: readonly string[] = [
      PRIMARY KEY (dataset_id, biogrid_id)
    )`,
 
-  /* Publication dictionary. The enrichment columns are filled by the OpenAlex/PubMed
-     client and stay NULL when the app is used entirely offline. */
+  /* Publication dictionary, per dataset: who reported what, and how much. */
   `CREATE TABLE IF NOT EXISTS publications (
      dataset_id       VARCHAR NOT NULL,
      publication_key  VARCHAR NOT NULL,
@@ -130,15 +129,33 @@ export const DDL: readonly string[] = [
      record_count     BIGINT,
      pair_count       BIGINT,
      system_count     BIGINT,
-
-     -- enrichment (Phase 4); NULL until fetched
-     title            VARCHAR,
-     venue            VARCHAR,
-     citation_count   BIGINT,
-     is_open_access   BOOLEAN,
-     institutions     VARCHAR,
-     enriched_at      TIMESTAMP,
      PRIMARY KEY (dataset_id, publication_key)
+   )`,
+
+  /* Literature metadata fetched from OpenAlex and PubMed.
+
+     Deliberately keyed by publication alone, *not* by dataset: the same paper appears
+     across organisms, releases and queries, and its citation count does not depend on
+     which BioGRID file you happened to load. A dataset-independent cache means
+     enrichment is paid for once and survives reloading, re-querying and comparison. */
+  `CREATE TABLE IF NOT EXISTS literature (
+     publication_key   VARCHAR PRIMARY KEY,
+     provider          VARCHAR,       -- 'openalex' | 'pubmed'
+     openalex_id       VARCHAR,
+     doi               VARCHAR,
+     pmid              VARCHAR,
+     title             VARCHAR,
+     venue             VARCHAR,
+     year              INTEGER,
+     citation_count    BIGINT,        -- NULL means unknown; never assume zero
+     is_open_access    BOOLEAN,
+     work_type         VARCHAR,
+     first_author      VARCHAR,
+     author_count      INTEGER,
+     institution_rors  VARCHAR,       -- pipe-joined ROR ids
+     institution_names VARCHAR,       -- pipe-joined display names
+     fetched_at        TIMESTAMP NOT NULL,
+     found             BOOLEAN NOT NULL DEFAULT TRUE
    )`,
 ]
 
@@ -149,6 +166,7 @@ export const INDEXES: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_int_pub ON interactions (dataset_id, publication_key)',
   'CREATE INDEX IF NOT EXISTS idx_int_system ON interactions (dataset_id, experimental_system)',
   'CREATE INDEX IF NOT EXISTS idx_genes_symbol ON genes (dataset_id, symbol)',
+  'CREATE INDEX IF NOT EXISTS idx_pub_dataset ON publications (dataset_id)',
 ]
 
 /** Escape a string literal for inlining into SQL. */

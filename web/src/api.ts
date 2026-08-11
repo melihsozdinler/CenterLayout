@@ -28,6 +28,14 @@ import {
 import type { ZipEntry } from './data/zip'
 import { isKnownExperimentalSystem } from './data/vocabulary'
 import {
+  enrichLiterature,
+  enrichmentCoverage,
+  type EnrichmentCoverage,
+  type EnrichOptions,
+  type EnrichResult,
+} from './enrich/enrich'
+import { loadContactEmail, saveContactEmail } from './enrich/openalex'
+import {
   BioGridRestClient,
   clearAccessKey,
   ingestFromRest,
@@ -90,6 +98,19 @@ export interface ProLiVisApi {
    * introduced a new method.
    */
   unclassifiedSystems(names: readonly string[]): string[]
+
+  // --- literature enrichment ------------------------------------------------
+  /**
+   * Fetch citation counts, venues and author institutions for the publications
+   * BioGRID cites, from OpenAlex with a PubMed fallback. Results are cached across
+   * datasets and survive reloads; nothing here is required for the tool to work.
+   */
+  enrich(options?: EnrichOptions): Promise<EnrichResult>
+  /** How much of the literature is resolved, which bounds what the trust model claims. */
+  coverage(datasetId?: string): Promise<EnrichmentCoverage>
+  /** Optional contact address; puts OpenAlex requests in their faster polite pool. */
+  contactEmail(): string | null
+  setContactEmail(email: string | null): void
 }
 
 /** Build a REST client from the stored key, or fail with a clear message. */
@@ -175,6 +196,18 @@ export const api: ProLiVisApi = {
   remoteEvidenceTypes: () => restClient().evidenceTypes(),
 
   unclassifiedSystems: (names) => names.filter((n) => !isKnownExperimentalSystem(n)),
+
+  async enrich(options) {
+    return enrichLiterature(await getEngine(), options ?? {})
+  },
+
+  async coverage(datasetId) {
+    return enrichmentCoverage(await getEngine(), datasetId)
+  },
+
+  contactEmail: () => loadContactEmail(),
+
+  setContactEmail: (email) => saveContactEmail(email),
 }
 
 declare global {
