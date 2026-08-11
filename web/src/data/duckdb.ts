@@ -39,6 +39,12 @@ export interface EngineOptions {
 export interface EngineInfo {
   readonly persistent: boolean
   readonly duckdbVersion: string
+  /**
+   * Set when persistence was wanted but could not be had — most often because another
+   * tab holds the database open. The app still works; loaded data just will not
+   * survive a reload, and the interface says so rather than pretending.
+   */
+  readonly persistenceError: string | null
 }
 
 /**
@@ -78,11 +84,7 @@ export class DuckDBEngine {
     const db = new duckdb.AsyncDuckDB(logger, worker)
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
 
-    const wantPersist = options.persist ?? true
-    const persistent = wantPersist && (await opfsAvailable())
-
-    await db.open({
-      ...(persistent ? { path: OPFS_DB_PATH } : {}),
+    const config: duckdb.DuckDBConfig = {
       accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
       // Single-threaded: SharedArrayBuffer is unavailable without cross-origin isolation.
       maximumThreads: 1,
@@ -92,11 +94,43 @@ export class DuckDBEngine {
         // as BigInt avoids silent precision loss in exported data.
         castBigIntToDouble: false,
       },
-    })
+    }
+
+    const wantPersist = options.persist ?? true
+    let persistent = wantPersist && (await opfsAvailable())
+    let persistenceError: string | null = null
+
+    if (persistent) {
+      try {
+        await db.open({ ...config, path: OPFS_DB_PATH })
+      } catch (cause) {
+        // OPFS is shared across the whole origin, so a second tab — or a handle the
+        // previous page has not yet released — can hold the database. Falling back to
+        // memory keeps the app usable instead of leaving it dead on arrival.
+        persistent = false
+        persistenceError =
+          'Could not open the saved database, most likely because another ProLiVis ' +
+          'tab has it open. Working in memory: data loaded now will not be kept ' +
+          `after a reload. (${String(cause)})`
+        console.warn(persistenceError)
+        await db.open(config)
+      }
+    } else {
+      await db.open(config)
+      if (wantPersist) {
+        persistenceError =
+          'This browser does not allow persistent storage here (private browsing ' +
+          'blocks it), so data will be lost on reload.'
+      }
+    }
 
     const conn = await db.connect()
     const version = await db.getVersion()
-    const engine = new DuckDBEngine(db, conn, { persistent, duckdbVersion: version })
+    const engine = new DuckDBEngine(db, conn, {
+      persistent,
+      duckdbVersion: version,
+      persistenceError,
+    })
     await engine.migrate()
     return engine
   }
@@ -208,6 +242,22 @@ export class DuckDBEngine {
   }
 
   /**
+   * Flush buffered writes to persistent storage.
+   *
+   * Without this, a dataset that took minutes to ingest can be lost to a page reload:
+   * DuckDB buffers, and a reload tears the worker down with no chance to settle. Called
+   * at the end of every ingest, which is exactly when there is most to lose.
+   */
+  async checkpoint(): Promise<void> {
+    if (!this.info.persistent) return
+    try {
+      await this.conn.query('CHECKPOINT')
+    } catch {
+      // An in-memory or read-only database has nothing to checkpoint.
+    }
+  }
+
+  /**
    * Delete every loaded dataset, leaving the schema in place.
    *
    * Needed because the database is persistent: without an explicit wipe, a BioGRID
@@ -217,6 +267,9 @@ export class DuckDBEngine {
     for (const table of ['interactions', 'genes', 'publications', 'datasets']) {
       await this.conn.query(`DELETE FROM ${table}`)
     }
+    // Durable immediately: a deletion the user asked for must not come back after a
+    // reload because it was still sitting in the write-ahead log.
+    await this.checkpoint()
   }
 
   async close(): Promise<void> {

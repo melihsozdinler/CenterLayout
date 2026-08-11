@@ -165,6 +165,9 @@ export async function ingestFile(
         (SELECT count(DISTINCT pair_key) FROM interactions
           WHERE dataset_id = ${sqlString(datasetId)})                                  AS pairs`)
 
+    // Make the load durable before reporting success, so a reload cannot lose it.
+    await engine.checkpoint()
+
     report({ phase: 'done', fraction: 1, recordsLoaded, message: 'Loaded' })
 
     return {
@@ -313,4 +316,5 @@ export async function removeDataset(
   for (const table of ['interactions', 'genes', 'publications', 'datasets']) {
     await engine.exec(`DELETE FROM ${table} WHERE dataset_id = ${id}`)
   }
+  await engine.checkpoint()
 }

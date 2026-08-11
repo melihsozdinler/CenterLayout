@@ -177,8 +177,15 @@ export async function listExperimentalSystems(
  * interactions survive the filter. Dropping them would hide precisely the biology that
  * cross-species BioGRID sets exist to capture.
  */
-export function organismFilter(datasetId: string, organismId?: number): string {
-  const base = `dataset_id = ${sqlString(datasetId)}`
+export function organismFilter(
+  datasetId: string,
+  organismId?: number,
+  alias?: string,
+): string {
+  // Qualify columns when the caller's query joins another table. Rewriting the
+  // finished string with a regex instead would risk mangling the quoted dataset id.
+  const q = alias ? `${alias}.` : ''
+  const base = `${q}dataset_id = ${sqlString(datasetId)}`
   if (organismId === undefined) return base
-  return `${base} AND (organism_id_a = ${organismId} OR organism_id_b = ${organismId})`
+  return `${base} AND (${q}organism_id_a = ${organismId} OR ${q}organism_id_b = ${organismId})`
 }

@@ -421,6 +421,8 @@ export async function ingestFromRest(
        WHERE dataset_id = ${sqlString(datasetId)}`,
     )
 
+    await engine.checkpoint()
+
     return {
       datasetId,
       label,

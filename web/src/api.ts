@@ -50,6 +50,14 @@ import {
   type GatheredEvidence,
   type ScoredPair,
 } from './trust/score'
+import { buildCenterGraph, type CenterGraphQuery } from './views/center-graph'
+import {
+  centerLayout,
+  type CenterLayoutOptions,
+  type CenterLayoutResult,
+} from './views/center-layout'
+import { centerScene, type CenterSceneOptions } from './views/render/center-scene'
+import { sceneToSvg, type Scene } from './views/render/scene'
 import {
   ablate,
   calibrate,
@@ -165,6 +173,21 @@ export interface ProLiVisApi {
   ): AblationRow[]
   /** Parse a user-supplied reference set of gene-symbol pairs. */
   referenceSet(name: string, text: string): ReferenceSet
+
+  // --- center layout --------------------------------------------------------
+  /**
+   * Compute the three-level center layout for a dataset: organism at the centre,
+   * experimental methods around it, publications on the outer band. Deterministic —
+   * the same query always gives the same coordinates.
+   */
+  centerLayout(
+    query: CenterGraphQuery,
+    options?: CenterLayoutOptions,
+  ): Promise<CenterLayoutResult>
+  /** Turn a layout into a drawable, surface-independent scene. */
+  centerScene(layout: CenterLayoutResult, options?: CenterSceneOptions): Scene
+  /** Serialize a scene to standalone, editable SVG for a publication figure. */
+  toSvg(scene: Scene, title?: string): string
 }
 
 /** Accept either a preset name or a full configuration. */
@@ -291,6 +314,15 @@ export const api: ProLiVisApi = {
     ablate(gathered, resolveConfig(config), reference),
 
   referenceSet: (name, text) => parseReferenceSet(name, text),
+
+  async centerLayout(query, options) {
+    const input = await buildCenterGraph(await getEngine(), query)
+    return centerLayout(input, options ?? {})
+  },
+
+  centerScene: (layout, options) => centerScene(layout, options ?? {}),
+
+  toSvg: (scene, title) => sceneToSvg(scene, title),
 }
 
 declare global {
