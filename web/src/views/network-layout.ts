@@ -19,7 +19,7 @@
 import type { PpiGraph } from '../algo/graph'
 import { connectedComponents } from '../algo/structure'
 
-export type NetworkLayoutMode = 'force' | 'grouped' | 'circular' | 'ego'
+export type NetworkLayoutMode = 'force' | 'grouped' | 'circular' | 'ego' | 'layered'
 
 export interface NetworkLayoutOptions {
   readonly mode?: NetworkLayoutMode
@@ -109,11 +109,13 @@ export function networkLayout(
       ? { x: new Float64Array(0), y: new Float64Array(0) }
       : mode === 'ego' && o.focus !== undefined
         ? egoPositions(graph, o.focus, o.radius)
-        : mode === 'circular'
-          ? circularPositions(graph, o.radius)
-          : mode === 'grouped'
-            ? groupedPositions(graph, groups, o.radius)
-            : forcePositions(graph, o)
+        : mode === 'layered'
+          ? layeredPositions(graph, o.radius, o.focus)
+          : mode === 'circular'
+            ? circularPositions(graph, o.radius)
+            : mode === 'grouped'
+              ? groupedPositions(graph, groups, o.radius)
+              : forcePositions(graph, o)
 
   const nodes: NetworkNode[] = graph.nodes.map((node, index) => ({
     index,
@@ -134,6 +136,158 @@ export function networkLayout(
 
   const extent = nodes.reduce((max, node) => Math.max(max, Math.hypot(node.x, node.y)), 1)
   return { mode, nodes, edges, extent, groupCount }
+}
+
+/**
+ * Layered drawing, in the Sugiyama style adapted to an undirected graph.
+ *
+ * A PPI network has no direction to layer by, so layers come from graph distance to a
+ * root — the highest-degree protein, or the focus when there is one. That makes the
+ * vertical axis mean "hops from here", which is the reading a biologist wants when
+ * asking how a signal could get from one protein to another: every edge that matters
+ * runs downward, and a long horizontal edge is visibly a shortcut.
+ *
+ * Within a layer, order is set by the barycentre heuristic swept up and down until it
+ * stops improving. Minimising crossings exactly is NP-hard; barycentre is the standard
+ * approximation and removes most of them in a handful of passes.
+ */
+function layeredPositions(graph: PpiGraph, radius: number, focus?: number) {
+  const x = new Float64Array(graph.order)
+  const y = new Float64Array(graph.order)
+  if (graph.order === 0) return { x, y }
+
+  // Root: the focus if the view has one, otherwise the best-connected protein — the
+  // layering is only meaningful relative to something, and a hub is the most useful
+  // default vantage point.
+  let root = focus ?? 0
+  if (focus === undefined) {
+    let best = -1
+    for (let i = 0; i < graph.order; i += 1) {
+      if (graph.degree(i) > best) {
+        best = graph.degree(i)
+        root = i
+      }
+    }
+  }
+
+  // Layer = distance from the root. Components the root cannot reach are layered from
+  // their own best-connected member and appended below, rather than dropped.
+  const layerOf = new Array<number>(graph.order).fill(-1)
+  const assign = (start: number, offset: number): number => {
+    let deepest = offset
+    layerOf[start] = offset
+    let frontier = [start]
+    while (frontier.length > 0) {
+      const next: number[] = []
+      for (const node of frontier) {
+        for (const neighbour of graph.adjacency[node]!) {
+          if (layerOf[neighbour] === -1) {
+            layerOf[neighbour] = layerOf[node]! + 1
+            deepest = Math.max(deepest, layerOf[neighbour]!)
+            next.push(neighbour)
+          }
+        }
+      }
+      frontier = next
+    }
+    return deepest
+  }
+
+  let deepest = assign(root, 0)
+  for (let i = 0; i < graph.order; i += 1) {
+    if (layerOf[i] === -1) deepest = assign(i, deepest + 2)
+  }
+
+  const layers: number[][] = Array.from({ length: deepest + 1 }, () => [])
+  for (let i = 0; i < graph.order; i += 1) layers[layerOf[i]!]!.push(i)
+  // Seed each layer by degree so the first barycentre sweep starts somewhere sensible.
+  for (const layer of layers) {
+    layer.sort((a, b) => graph.degree(b) - graph.degree(a) || a - b)
+  }
+
+  // Barycentre sweeps: order each layer by the mean position of its neighbours in the
+  // adjacent layer, alternating direction. Stops when a full pass changes nothing.
+  const positionIn = new Array<number>(graph.order).fill(0)
+  const reindex = () => {
+    for (const layer of layers) {
+      layer.forEach((node, index) => {
+        positionIn[node] = index
+      })
+    }
+  }
+  reindex()
+
+  const sweep = (from: number, to: number, step: number): boolean => {
+    let changed = false
+    for (let level = from; level !== to; level += step) {
+      const target = level + step
+      if (target < 0 || target >= layers.length) break
+      const layer = layers[target]!
+      const before = layer.join(',')
+
+      const barycentre = new Map<number, number>()
+      for (const node of layer) {
+        const anchors = graph.adjacency[node]!.filter((nb) => layerOf[nb] === level)
+        barycentre.set(
+          node,
+          anchors.length === 0
+            ? // No anchor in the reference layer: keep its current place rather than
+              // collapsing every such node onto zero, which would pile them together.
+              positionIn[node]!
+            : anchors.reduce((sum, nb) => sum + positionIn[nb]!, 0) / anchors.length,
+        )
+      }
+      layer.sort(
+        (a, b) => barycentre.get(a)! - barycentre.get(b)! || positionIn[a]! - positionIn[b]!,
+      )
+      if (layer.join(',') !== before) changed = true
+      reindex()
+    }
+    return changed
+  }
+
+  for (let pass = 0; pass < 12; pass += 1) {
+    const down = sweep(0, layers.length - 1, 1)
+    const up = sweep(layers.length - 1, 0, -1)
+    if (!down && !up) break
+  }
+
+  const widest = Math.max(1, ...layers.map((l) => l.length))
+  const width = radius * 2
+  const height = radius * 1.6
+  // Minimum horizontal gap between adjacent nodes; below this a layer reads as a
+  // solid line rather than as proteins.
+  const nodeSpacing = 11
+  const perRow = Math.max(4, Math.floor(width / nodeSpacing))
+
+  // A layer wider than the canvas wraps into sub-rows. At organism scale a single
+  // hop from a hub can hold a thousand proteins, and a hop is still one layer — so
+  // the rows stay grouped and the vertical axis keeps meaning hops, with thickness.
+  const rowsIn = layers.map((layer) => Math.max(1, Math.ceil(layer.length / perRow)))
+  const totalRows = rowsIn.reduce((sum, r) => sum + r, 0)
+  const rowGap = height / Math.max(1, totalRows - 1)
+
+  let row = 0
+  layers.forEach((layer, level) => {
+    const rows = rowsIn[level]!
+    const inRow = Math.ceil(layer.length / rows)
+
+    layer.forEach((node, index) => {
+      const rowIndex = Math.floor(index / inRow)
+      const positionInRow = index % inRow
+      const countInRow = Math.min(inRow, layer.length - rowIndex * inRow)
+
+      // Spread over a width proportional to how full the row is, so a two-node row
+      // is not stretched across the whole drawing.
+      const span = width * Math.min(1, countInRow / Math.min(widest, perRow))
+      const t = countInRow === 1 ? 0.5 : positionInRow / (countInRow - 1)
+      x[node] = -span / 2 + t * span
+      y[node] = -height / 2 + (row + rowIndex) * rowGap
+    })
+    row += rows
+  })
+
+  return { x, y }
 }
 
 /**

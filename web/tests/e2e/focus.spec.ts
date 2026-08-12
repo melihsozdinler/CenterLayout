@@ -57,7 +57,7 @@ test('focusing switches to an ego view centred on the protein', async ({ page })
   await expect(page.locator('.protein')).toBeVisible({ timeout: 60_000 })
 
   // Focusing implies the network view, showing only the neighbourhood.
-  await expect(page.getByRole('button', { name: 'Network' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'Network', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
@@ -72,7 +72,7 @@ test('focusing switches to an ego view centred on the protein', async ({ page })
 
 test('minimum-partners control thins the network', async ({ page }) => {
   test.setTimeout(300_000)
-  await page.getByRole('button', { name: 'Network' }).click()
+  await page.getByRole('button', { name: 'Network', exact: true }).click()
   await expect(page.getByRole('banner')).toContainText('proteins', { timeout: 120_000 })
 
   const before = await proteins(page)

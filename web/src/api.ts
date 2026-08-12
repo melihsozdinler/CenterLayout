@@ -58,6 +58,16 @@ import {
   type ProteinDetail,
 } from './model/protein'
 import {
+  availableFor,
+  loadResources,
+  resetResources,
+  resolveUrl,
+  saveResources,
+  validateResource,
+  type ExternalResource,
+  type ResourceContext,
+} from './external/resources'
+import {
   applySetOperation,
   compareDatasets,
   mergeDatasets,
@@ -300,6 +310,20 @@ export interface ProLiVisApi {
    * each: which publications, which methods, over which years.
    */
   protein(datasetId: string, biogridId: number): Promise<ProteinDetail | null>
+  // --- external databases ---------------------------------------------------
+  /** The configured links out to BioGRID, STRING, UniProt and anything added. */
+  resources(): ExternalResource[]
+  /** Replace the configuration; validated, and persisted in this browser. */
+  setResources(resources: readonly ExternalResource[]): void
+  /** Restore the shipped defaults. */
+  resetResources(): ExternalResource[]
+  /** Resolve one resource against a protein, or null if it cannot be. */
+  resourceUrl(resource: ExternalResource, context: ResourceContext): string | null
+  /** Every resource that resolves for a protein. */
+  resourcesFor(
+    context: ResourceContext,
+    resources?: readonly ExternalResource[],
+  ): { resource: ExternalResource; url: string }[]
   /** Search proteins by symbol or synonym. */
   findProteins(
     datasetId: string,
@@ -543,6 +567,19 @@ export const api: ProLiVisApi = {
   async findProteins(datasetId, query, limit) {
     return findProteins(await getEngine(), datasetId, query, limit)
   },
+
+  resources: () => loadResources(),
+
+  setResources: (resources) => {
+    for (const resource of resources) validateResource(resource)
+    saveResources(resources)
+  },
+
+  resetResources: () => resetResources(),
+
+  resourceUrl: (resource, context) => resolveUrl(resource, context),
+
+  resourcesFor: (context, resources) => availableFor(resources ?? loadResources(), context),
 
   networkScene: (layout, options) => networkScene(layout, options ?? {}),
 

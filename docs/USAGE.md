@@ -38,6 +38,45 @@ Options:
 The layout is deterministic: the same query always produces the same coordinates, which
 is what makes an exported figure reproducible.
 
+### Reading a network
+
+Clicking a protein centres the view on it and opens a panel listing every interaction
+it takes part in, with the evidence behind each: methods, publications by author and
+year, throughput split. Any partner can be expanded, or clicked to walk to it — the
+breadcrumb above the canvas keeps a trail, so **← Whole network** and **Back** always
+return you to where you were.
+
+Layouts are on the canvas, not in the sidebar, because choosing one is the main thing
+you do while reading a network:
+
+| Layout | Answers |
+| --- | --- |
+| **Force** | What clusters together? Best under ~1,200 proteins. |
+| **Layered** | How many hops apart are these? Layers are graph distance from the best-connected protein, or from the focused one. Over-full layers wrap into sub-rows. |
+| **Grouped** | What are the modules? |
+| **Circular** | A stable reference arrangement. |
+
+Density has three separate controls because they fail differently: **minimum partners**
+drops the periphery (usually the effective one, since a PPI network is mostly degree-1
+leaves), **interactions drawn** keeps the best-supported but can leave a protein looking
+unconnected because its edges lost a global race, and **hops** sets the radius of a
+focused view. The trust threshold is the honest cut.
+
+While a protein is focused the trust threshold does not apply — you asked to see
+everything it interacts with, so trust shows as edge colour and weight instead.
+
+### Other databases
+
+The protein panel links out to BioGRID, STRING, UniProt, IntAct, AmiGO and NCBI Gene.
+Where a site permits framing its page opens beside the network; where it does not, the
+link opens a tab. STRING blocks framing, so its network *image* is shown instead —
+which is what ProLiVis 1.0 did.
+
+The list is yours: **External databases** in the sidebar edits it, with a base URL and a
+template using `{symbol}`, `{biogridId}`, `{entrez}`, `{swissprot}`, `{organismId}` or
+`{systematic}`. Additions persist in this browser. Opening a link sends the identifier
+to that site; nothing is contacted until you ask.
+
 ## Trust scoring
 
 Every interaction gets a score in `[0, 1]` from seven terms, described in full in

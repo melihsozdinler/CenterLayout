@@ -28,7 +28,7 @@ test('switches to the network view and draws the interactions', async ({ page })
   test.setTimeout(300_000)
   await load(page)
 
-  await page.getByRole('button', { name: 'Network' }).click()
+  await page.getByRole('button', { name: 'Network', exact: true }).click()
   await expect(page.getByRole('banner')).toContainText('proteins', { timeout: 120_000 })
   await expect(page.getByRole('banner')).toContainText('interactions')
 
@@ -45,7 +45,7 @@ test('switches to the network view and draws the interactions', async ({ page })
 test('raising the trust threshold shrinks the network', async ({ page }) => {
   test.setTimeout(300_000)
   await load(page)
-  await page.getByRole('button', { name: 'Network' }).click()
+  await page.getByRole('button', { name: 'Network', exact: true }).click()
   await expect(page.getByRole('banner')).toContainText('proteins', { timeout: 120_000 })
 
   const count = async () =>
@@ -65,7 +65,7 @@ test('raising the trust threshold shrinks the network', async ({ page }) => {
 test('switches to the matrix view', async ({ page }) => {
   test.setTimeout(300_000)
   await load(page)
-  await page.getByRole('button', { name: 'Matrix' }).click()
+  await page.getByRole('button', { name: 'Matrix', exact: true }).click()
   await expect(page.getByRole('banner')).toContainText('proteins', { timeout: 120_000 })
   await expect(page.getByText(/Row order/)).toBeVisible()
 })

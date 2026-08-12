@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { APP_NAME, APP_VERSION } from '../app-info'
 import { CenterView } from './CenterView'
 import { NetworkView } from './NetworkView'
+import { CanvasToolbar } from './CanvasToolbar'
+import { ExternalPanel } from './ExternalPanel'
 import { Sidebar } from './Sidebar'
 import { useApp } from './store'
 
@@ -86,7 +88,9 @@ export function App() {
       </aside>
 
       <main className="app-main" aria-label="Visualization">
+        <CanvasToolbar />
         {view === 'center' ? <CenterView /> : <NetworkView />}
+        <ExternalPanel />
       </main>
 
       <footer className="app-footer">

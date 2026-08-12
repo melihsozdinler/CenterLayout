@@ -3,6 +3,8 @@ import { buildMatrix, buildUpSet } from '@/views/matrix'
 import { buildBipartite } from '@/views/bipartite'
 import { buildMethodChord, buildTimeline, type TimelineRecord } from '@/views/timeline'
 import type { ScoredPair } from '@/trust/score'
+import { networkLayout } from '@/views/network-layout'
+import { PpiGraph } from '@/algo/graph'
 
 function pairs(specs: [string, string, number][]): ScoredPair[] {
   const labels = [...new Set(specs.flatMap(([a, b]) => [a, b]))].sort()
@@ -30,6 +32,13 @@ function pairs(specs: [string, string, number][]): ScoredPair[] {
       symbolHi: idOf.get(a)! <= idOf.get(b)! ? b : a,
     }
   })
+}
+
+/** A graph from `A-B` edge strings, with ids derived from labels for determinism. */
+function graphOf(edges: string[]): PpiGraph {
+  return PpiGraph.fromPairs(
+    pairs(edges.map((e) => [e.split('-')[0]!, e.split('-')[1]!, 1] as [string, string, number])),
+  )
 }
 
 describe('buildMatrix', () => {
@@ -276,5 +285,113 @@ describe('buildMethodChord', () => {
     for (const ribbon of chord.chords) {
       expect(names.has(ribbon.source) && names.has(ribbon.target)).toBe(true)
     }
+  })
+})
+
+describe('layered layout', () => {
+  it('layers nodes by hop distance from the best-connected protein', () => {
+    // HUB has degree 3 and everything else at most 2, so it is unambiguously the root.
+    // (With a tie the root is still chosen deterministically, just not obviously.)
+    const graph = graphOf(['HUB-A', 'HUB-B', 'HUB-E', 'A-C', 'C-D'])
+    const layout = networkLayout(graph, { mode: 'layered' })
+
+    const y = (label: string) => layout.nodes.find((n) => n.label === label)!.y
+    // HUB above A, A above C, C above D: the vertical axis means hops from the root.
+    expect(y('HUB')).toBeLessThan(y('A'))
+    expect(y('A')).toBeLessThan(y('C'))
+    expect(y('C')).toBeLessThan(y('D'))
+    // Both of HUB's immediate partners share a layer.
+    expect(y('A')).toBeCloseTo(y('B'), 6)
+  })
+
+  it('roots the layering at the focus when there is one', () => {
+    const graph = graphOf(['HUB-A', 'HUB-B', 'HUB-E', 'A-C', 'C-D'])
+    const d = graph.nodes.findIndex((n) => n.label === 'D')
+    const layout = networkLayout(graph, { mode: 'layered', focus: d })
+
+    const y = (label: string) => layout.nodes.find((n) => n.label === label)!.y
+    // Layered from D, the order reverses.
+    expect(y('D')).toBeLessThan(y('C'))
+    expect(y('C')).toBeLessThan(y('A'))
+  })
+
+  it('places unreachable components below rather than dropping them', () => {
+    const graph = graphOf(['A-B', 'B-C', 'X-Y'])
+    const layout = networkLayout(graph, { mode: 'layered' })
+    expect(layout.nodes).toHaveLength(5)
+    const y = (label: string) => layout.nodes.find((n) => n.label === label)!.y
+    // The disconnected pair sits below everything reachable from the root.
+    expect(y('X')).toBeGreaterThan(y('C'))
+  })
+
+  it('reduces crossings rather than leaving the seed order', () => {
+    // Two layers wired so degree order crosses and barycentre does not.
+    const graph = graphOf(['R-A', 'R-B', 'R-C', 'A-P', 'B-Q', 'C-P', 'C-Q'])
+    const layout = networkLayout(graph, { mode: 'layered' })
+
+    const at = (label: string) => layout.nodes.find((n) => n.label === label)!
+    const crossings = layout.edges.reduce((count, e1, i) => {
+      return (
+        count +
+        layout.edges.slice(i + 1).filter((e2) => {
+          const a1 = layout.nodes[e1.source]!
+          const b1 = layout.nodes[e1.target]!
+          const a2 = layout.nodes[e2.source]!
+          const b2 = layout.nodes[e2.target]!
+          // Count only crossings between the same pair of layers.
+          if (a1.y === b1.y || a2.y === b2.y) return false
+          if (Math.min(a1.y, b1.y) !== Math.min(a2.y, b2.y)) return false
+          const [t1, u1] = a1.y < b1.y ? [a1, b1] : [b1, a1]
+          const [t2, u2] = a2.y < b2.y ? [a2, b2] : [b2, a2]
+          return (t1.x - t2.x) * (u1.x - u2.x) < 0
+        }).length
+      )
+    }, 0)
+
+    expect(at('R')).toBeDefined()
+    // A handful of nodes should be laid out with few crossings; the point is that the
+    // sweeps run at all, not a specific optimum.
+    expect(crossings).toBeLessThan(4)
+  })
+
+  it('is deterministic', () => {
+    const build = () => networkLayout(graphOf(['A-B', 'B-C', 'C-A', 'C-D']), { mode: 'layered' })
+    expect(JSON.stringify(build().nodes)).toBe(JSON.stringify(build().nodes))
+  })
+})
+
+describe('ego layout', () => {
+  it('places the focus at the origin and partners by hop distance', () => {
+    const graph = graphOf(['F-A', 'F-B', 'A-C'])
+    const f = graph.nodes.findIndex((n) => n.label === 'F')
+    const layout = networkLayout(graph, { mode: 'ego', focus: f })
+
+    const at = (label: string) => layout.nodes.find((n) => n.label === label)!
+    expect(Math.hypot(at('F').x, at('F').y)).toBeCloseTo(0, 6)
+    const rA = Math.hypot(at('A').x, at('A').y)
+    const rC = Math.hypot(at('C').x, at('C').y)
+    expect(rA).toBeGreaterThan(0)
+    expect(rC).toBeGreaterThan(rA)
+  })
+
+  it('wraps a large ring into bands instead of overlapping nodes', () => {
+    // 400 partners cannot fit one circle at a legible spacing.
+    const graph = graphOf(Array.from({ length: 400 }, (_, i) => `F-P${i}`))
+    const f = graph.nodes.findIndex((n) => n.label === 'F')
+    const layout = networkLayout(graph, { mode: 'ego', focus: f })
+
+    const radii = new Set(
+      layout.nodes
+        .filter((n) => n.label !== 'F')
+        .map((n) => Math.hypot(n.x, n.y).toFixed(3)),
+    )
+    expect(radii.size).toBeGreaterThan(1)
+
+    const positions = layout.nodes.map((n) => `${n.x.toFixed(3)},${n.y.toFixed(3)}`)
+    expect(new Set(positions).size).toBe(positions.length)
+  })
+
+  it('falls back to force when asked for ego with no focus', () => {
+    expect(networkLayout(graphOf(['A-B']), { mode: 'ego' }).mode).toBe('force')
   })
 })

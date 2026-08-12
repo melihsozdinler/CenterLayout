@@ -205,22 +205,6 @@ export function Sidebar() {
           {state.view === 'network' && (
             <>
               <label>
-                Arrangement
-                <select
-                  value={state.networkSettings.mode}
-                  onChange={(e) =>
-                    void state.updateNetwork({
-                      mode: e.target.value as 'force' | 'grouped' | 'circular',
-                    })
-                  }
-                >
-                  <option value="force">Force-directed</option>
-                  <option value="grouped">Modules on a ring</option>
-                  <option value="circular">Single ring</option>
-                </select>
-              </label>
-
-              <label>
                 Colour by
                 <select
                   value={state.networkSettings.colourBy}
@@ -325,6 +309,8 @@ export function Sidebar() {
           </p>
         </section>
       )}
+
+      <ResourceEditor />
 
       {state.datasets.length > 1 && (
         <section className="panel">
@@ -451,5 +437,115 @@ export function Sidebar() {
         </section>
       )}
     </>
+  )
+}
+
+/**
+ * Editing the links out to other databases.
+ *
+ * Which databases matter depends on the organism and the question, so the list is the
+ * user's rather than ours — base URL and template are both editable, and anything
+ * added persists in this browser.
+ */
+function ResourceEditor() {
+  const resources = useApp((s) => s.resources)
+  const updateResources = useApp((s) => s.updateResources)
+  const restoreResources = useApp((s) => s.restoreResources)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState({ name: '', baseUrl: '', template: '' })
+
+  return (
+    <section className="panel">
+      <h2>
+        <button className="link" onClick={() => setOpen(!open)}>
+          External databases ({resources.length}) {open ? '▾' : '▸'}
+        </button>
+      </h2>
+
+      {open && (
+        <>
+          <ul className="resource-list">
+            {resources.map((resource) => (
+              <li key={resource.id}>
+                <span>
+                  <strong>{resource.name}</strong>
+                  <span className="hint">
+                    {resource.display === 'embed'
+                      ? 'shown in panel'
+                      : resource.display === 'image'
+                        ? 'image'
+                        : 'new tab'}
+                  </span>
+                </span>
+                <button
+                  className="remove"
+                  aria-label={`Remove ${resource.name}`}
+                  onClick={() =>
+                    updateResources(resources.filter((r) => r.id !== resource.id))
+                  }
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <label>
+            Name
+            <input
+              type="text"
+              value={draft.name}
+              placeholder="Reactome"
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            />
+          </label>
+          <label>
+            Base URL
+            <input
+              type="text"
+              value={draft.baseUrl}
+              placeholder="https://reactome.org"
+              onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })}
+            />
+          </label>
+          <label>
+            Template
+            <input
+              type="text"
+              value={draft.template}
+              placeholder="/content/query?q={symbol}"
+              onChange={(e) => setDraft({ ...draft, template: e.target.value })}
+            />
+          </label>
+          <p className="hint">
+            Placeholders: {'{symbol}'} {'{biogridId}'} {'{entrez}'} {'{swissprot}'}{' '}
+            {'{organismId}'} {'{systematic}'}
+          </p>
+
+          <button
+            onClick={() => {
+              if (!draft.name.trim() || !draft.baseUrl.trim()) return
+              updateResources([
+                ...resources,
+                {
+                  id: `user-${draft.name.toLowerCase().replace(/\W+/g, '-')}-${resources.length}`,
+                  name: draft.name.trim(),
+                  baseUrl: draft.baseUrl.trim(),
+                  template: draft.template.trim() || '/',
+                  // New tab by default: most sites refuse framing, and a blank panel
+                  // is a worse first impression than a working link.
+                  display: 'tab',
+                  requires: [],
+                },
+              ])
+              setDraft({ name: '', baseUrl: '', template: '' })
+            }}
+          >
+            Add
+          </button>
+          <button onClick={restoreResources}>Restore defaults</button>
+        </>
+      )}
+    </section>
   )
 }

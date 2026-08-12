@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { api } from '../api'
 import { useApp } from './store'
 
 /**
@@ -10,7 +11,28 @@ import { useApp } from './store'
 export function ProteinPanel() {
   const focus = useApp((s) => s.focus)
   const focusProtein = useApp((s) => s.focusProtein)
+  const resources = useApp((s) => s.resources)
+  const openExternal = useApp((s) => s.openExternal)
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  const links = useMemo(
+    () =>
+      focus
+        ? api.resourcesFor(
+            {
+              symbol: focus.symbol,
+              biogridId: focus.biogridId,
+              entrez: focus.entrez,
+              systematic: focus.systematic,
+              swissprot: focus.swissprot[0] ?? null,
+              organismId: focus.organismId,
+              organismName: focus.organism,
+            },
+            resources,
+          )
+        : [],
+    [focus, resources],
+  )
 
   if (!focus) return null
 
@@ -36,6 +58,21 @@ export function ProteinPanel() {
         of them are drawn while a protein is focused — the trust threshold shows as edge
         colour and weight here rather than hiding anything.
       </p>
+
+      {links.length > 0 && (
+        <div className="external-links">
+          {links.map(({ resource, url }) => (
+            <button
+              key={resource.id}
+              title={resource.note ?? `${resource.name}: ${url}`}
+              onClick={() => openExternal(resource, url)}
+            >
+              {resource.name}
+              {resource.display === 'tab' && ' ↗'}
+            </button>
+          ))}
+        </div>
+      )}
 
       <ul className="partners">
         {focus.partners.slice(0, 200).map((partner) => {

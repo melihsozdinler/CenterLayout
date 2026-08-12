@@ -15,6 +15,7 @@ import type { MatrixView, MatrixOrdering } from '../views/matrix'
 import type { NetworkColouring } from '../views/render/network-scene'
 import type { ComparisonResult } from '../compare/compare'
 import type { ProteinDetail } from '../model/protein'
+import type { ExternalResource } from '../external/resources'
 import type { IngestProgress } from '../data/ingest'
 import type { ZipEntry } from '../data/zip'
 
@@ -65,7 +66,16 @@ interface AppState {
   /** BioGRID gene id the view is centred on, if any. */
   focusId: number | null
   focus: ProteinDetail | null
+  /**
+   * Proteins focused before this one. Walking partner to partner is the natural way
+   * to explore, and without a trail there is no way back to where you started.
+   */
+  focusHistory: number[]
   searchResults: { biogridId: number; symbol: string; organism: string | null }[]
+
+  resources: ExternalResource[]
+  /** Resource currently open in the side panel, if any. */
+  openResource: { resource: ExternalResource; url: string } | null
 
   busy: string | null
   progress: IngestProgress | null
@@ -93,7 +103,14 @@ interface AppState {
   mergeWith: (datasetId: string) => Promise<void>
   /** Centre the network on one protein and list its interactions. */
   focusProtein: (biogridId: number | null) => Promise<void>
+  /** Step back to the previously focused protein, or to the whole network. */
+  focusBack: () => Promise<void>
   searchProteins: (query: string) => Promise<void>
+
+  openExternal: (resource: ExternalResource, url: string) => void
+  closeExternal: () => void
+  updateResources: (resources: readonly ExternalResource[]) => void
+  restoreResources: () => void
 }
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
@@ -133,7 +150,10 @@ export const useApp = create<AppState>((set, get) => ({
   compareWith: null,
   focusId: null,
   focus: null,
+  focusHistory: [],
   searchResults: [],
+  resources: api.resources(),
+  openResource: null,
   busy: null,
   progress: null,
   error: null,
@@ -232,15 +252,29 @@ export const useApp = create<AppState>((set, get) => ({
   async focusProtein(biogridId) {
     const dataset = get().activeDatasetId
     if (dataset === null) return
+
     if (biogridId === null) {
-      set({ focusId: null, focus: null })
+      // Back to the whole network, and the trail is spent.
+      set({ focusId: null, focus: null, focusHistory: [], openResource: null })
       await rebuildLayout(set, get)
       return
     }
+
+    const current = get().focusId
     set({ busy: 'Loading interactions' })
     try {
       const focus = await api.protein(dataset, biogridId)
-      set({ focus, focusId: biogridId, view: 'network', error: null })
+      set({
+        focus,
+        focusId: biogridId,
+        view: 'network',
+        openResource: null,
+        focusHistory:
+          current === null || current === biogridId
+            ? get().focusHistory
+            : [...get().focusHistory, current],
+        error: null,
+      })
     } catch (e) {
       set({ error: message(e) })
     } finally {
@@ -248,6 +282,50 @@ export const useApp = create<AppState>((set, get) => ({
     }
     await rebuildLayout(set, get)
   },
+
+  async focusBack() {
+    const history = [...get().focusHistory]
+    const previous = history.pop()
+    if (previous === undefined) {
+      await get().focusProtein(null)
+      return
+    }
+    const dataset = get().activeDatasetId
+    if (dataset === null) return
+
+    set({ busy: 'Loading interactions' })
+    try {
+      const focus = await api.protein(dataset, previous)
+      set({ focus, focusId: previous, focusHistory: history, openResource: null })
+    } catch (e) {
+      set({ error: message(e) })
+    } finally {
+      set({ busy: null })
+    }
+    await rebuildLayout(set, get)
+  },
+
+  openExternal(resource, url) {
+    if (resource.display === 'tab') {
+      // noopener so the opened page cannot reach back into this one.
+      window.open(url, '_blank', 'noopener,noreferrer')
+      return
+    }
+    set({ openResource: { resource, url } })
+  },
+
+  closeExternal: () => set({ openResource: null }),
+
+  updateResources(resources) {
+    try {
+      api.setResources(resources)
+      set({ resources: [...resources], error: null })
+    } catch (e) {
+      set({ error: message(e) })
+    }
+  },
+
+  restoreResources: () => set({ resources: api.resetResources() }),
 
   async searchProteins(query) {
     const dataset = get().activeDatasetId
