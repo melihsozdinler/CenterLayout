@@ -58,6 +58,14 @@ import {
   type ProteinDetail,
 } from './model/protein'
 import {
+  findPublications,
+  publicationSummary,
+  publicationUrl,
+  topPublications,
+  type PublicationHit,
+  type PublicationSummary,
+} from './model/publications'
+import {
   availableFor,
   loadResources,
   resetResources,
@@ -324,6 +332,18 @@ export interface ProLiVisApi {
     context: ResourceContext,
     resources?: readonly ExternalResource[],
   ): { resource: ExternalResource; url: string }[]
+  /** Search publications by author, year, PubMed id, DOI or title. */
+  findPublications(datasetId: string, query: string, limit?: number): Promise<PublicationHit[]>
+  /** The publications contributing most to a dataset. */
+  topPublications(
+    datasetId: string,
+    limit?: number,
+    organismId?: number,
+  ): Promise<PublicationHit[]>
+  /** One publication, with its methods and enrichment. */
+  publication(datasetId: string, publicationKey: string): Promise<PublicationSummary | null>
+  /** A link to PubMed or doi.org for a publication reference. */
+  publicationUrl(refKind: string | null, refId: string | null): string | null
   /** Search proteins by symbol or synonym. */
   findProteins(
     datasetId: string,
@@ -563,6 +583,20 @@ export const api: ProLiVisApi = {
   async protein(datasetId, biogridId) {
     return proteinDetail(await getEngine(), datasetId, biogridId)
   },
+
+  async findPublications(datasetId, query, limit) {
+    return findPublications(await getEngine(), datasetId, query, limit)
+  },
+
+  async topPublications(datasetId, limit, organismId) {
+    return topPublications(await getEngine(), datasetId, limit, organismId)
+  },
+
+  async publication(datasetId, publicationKey) {
+    return publicationSummary(await getEngine(), datasetId, publicationKey)
+  },
+
+  publicationUrl: (refKind, refId) => publicationUrl(refKind, refId),
 
   async findProteins(datasetId, query, limit) {
     return findProteins(await getEngine(), datasetId, query, limit)

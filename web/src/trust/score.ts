@@ -33,6 +33,14 @@ export interface EvidenceQuery {
   readonly organismId?: number
   /** Only pairs whose evidence includes one of these experimental systems. */
   readonly systems?: readonly string[]
+  /**
+   * Only pairs reported by these publications.
+   *
+   * This is what makes a publication node in the literature view clickable: it turns
+   * "who reported this" back into "and here is what they reported", which was the
+   * drill-down ProLiVis 1.0 offered and the reason its publication nodes existed.
+   */
+  readonly publications?: readonly string[]
   /** Drop pairs with no physical evidence. */
   readonly physicalOnly?: boolean
   /** Drop self-interactions. */
@@ -51,6 +59,10 @@ function whereClause(query: EvidenceQuery, alias = 'i'): string {
   if (query.systems?.length) {
     const list = query.systems.map(sqlString).join(', ')
     parts.push(`${alias}.experimental_system IN (${list})`)
+  }
+  if (query.publications?.length) {
+    const list = query.publications.map(sqlString).join(', ')
+    parts.push(`${alias}.publication_key IN (${list})`)
   }
   if (query.excludeSelfInteractions) {
     parts.push(`NOT ${alias}.is_self_interaction`)

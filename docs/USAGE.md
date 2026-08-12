@@ -38,6 +38,26 @@ Options:
 The layout is deterministic: the same query always produces the same coordinates, which
 is what makes an exported figure reproducible.
 
+### From the literature to the interactions
+
+Clicking a **publication** node in the literature view opens the network that paper
+reported. Clicking a **method** node opens every interaction that technique has
+produced; the folded "Other methods" node opens all of them together. This is the
+drill-down the literature view exists for — a publication node answers *who reported
+this*, and clicking it answers *and what did they report* — and it is what ProLiVis 1.0
+offered from its publication list.
+
+**Find literature** in the sidebar does the same from a search: by author, year, PubMed
+id, DOI, or enriched title. With an empty box it lists the biggest contributors, which
+answers "what is this network mostly made of". Each result shows how many interactions
+and how many methods the paper contributed before you commit to opening it, and links
+out to PubMed or doi.org.
+
+A scoped network shows *all* of that paper's or method's interactions — the trust
+threshold does not apply, because you asked for a specific bounded set. Trust stays
+visible as edge colour and weight. The breadcrumb above the canvas returns you to the
+whole network.
+
 ### Reading a network
 
 Clicking a protein centres the view on it and opens a panel listing every interaction

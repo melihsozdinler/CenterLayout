@@ -25,6 +25,9 @@ export function CanvasToolbar() {
   const focusHistory = useApp((s) => s.focusHistory)
   const focusProtein = useApp((s) => s.focusProtein)
   const focusBack = useApp((s) => s.focusBack)
+  const scope = useApp((s) => s.scope)
+  const scopeDetail = useApp((s) => s.scopeDetail)
+  const setScope = useApp((s) => s.setScope)
 
   if (view !== 'network') return null
 
@@ -34,6 +37,23 @@ export function CanvasToolbar() {
 
   return (
     <div className="canvas-toolbar">
+      {scope && !focused && (
+        <div className="crumbs">
+          <button onClick={() => void setScope(null)} title="Back to the whole network">
+            ← Whole network
+          </button>
+          <span className="crumb-current">
+            {scope.kind === 'publication' ? '📄' : '🔬'} {scope.label}
+          </span>
+          {scopeDetail && (
+            <span className="hint">
+              {scopeDetail.proteinCount} proteins · {scopeDetail.interactionCount}{' '}
+              interactions · {scopeDetail.systems.join(', ')}
+            </span>
+          )}
+        </div>
+      )}
+
       {focused && (
         <div className="crumbs">
           <button

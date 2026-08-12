@@ -19,6 +19,7 @@ export function CenterView() {
   const layout = useApp((s) => s.layout)
   const selectedNodeId = useApp((s) => s.selectedNodeId)
   const selectNode = useApp((s) => s.selectNode)
+  const setScope = useApp((s) => s.setScope)
   const showPublicationLabels = useApp((s) => s.layoutSettings.showPublicationLabels)
 
   const [view, setView] = useState({ scale: 0.55, offsetX: 0, offsetY: 0 })
@@ -158,7 +159,39 @@ export function CenterView() {
           if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 4) {
             const world = toWorld(e.clientX, e.clientY)
             const node = nodeAt(layout, world.x, world.y)
-            selectNode(node?.id ?? null)
+            if (!node) {
+              selectNode(null)
+              return
+            }
+
+            // A publication node answers "who reported this"; clicking it should
+            // answer "and what did they report". Likewise a method node, one level up.
+            if (node.kind === 'publication') {
+              void setScope({
+                kind: 'publication',
+                keys: [node.id.replace(/^pub:/, '').replace(/@.*$/, '')],
+                label: node.label,
+              })
+              return
+            }
+            if (node.kind === 'system') {
+              void setScope({
+                kind: 'system',
+                keys: [node.label],
+                label: node.label,
+              })
+              return
+            }
+            if (node.kind === 'aggregate' && node.aggregated) {
+              void setScope({
+                kind: 'system',
+                keys: [...node.aggregated],
+                label: `${node.aggregated.length} rarely used methods`,
+              })
+              return
+            }
+            // The organism node is the whole dataset, which is where we already are.
+            selectNode(node.id)
           }
         }}
         onWheel={onWheel}
@@ -173,7 +206,10 @@ export function CenterView() {
             <Swatch color={PROLIVIS_STYLE.system} label="Method" />
             <Swatch color={PROLIVIS_STYLE.systemGenetic} label="Genetic method" />
             <Swatch color={PROLIVIS_STYLE.publication} label="Publication" />
-            <span className="legend-note">Node area ∝ interactions contributed</span>
+            <span className="legend-note">
+              Node area ∝ interactions contributed · click a method or publication to see
+              its interactions
+            </span>
           </div>
 
           <div className="canvas-controls">

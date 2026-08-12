@@ -16,10 +16,25 @@ import type { NetworkColouring } from '../views/render/network-scene'
 import type { ComparisonResult } from '../compare/compare'
 import type { ProteinDetail } from '../model/protein'
 import type { ExternalResource } from '../external/resources'
+import type { PublicationHit, PublicationSummary } from '../model/publications'
 import type { IngestProgress } from '../data/ingest'
 import type { ZipEntry } from '../data/zip'
 
 export type ViewKind = 'center' | 'network' | 'matrix'
+
+/**
+ * A restriction of the network to part of the literature.
+ *
+ * This is the drill-down the literature view exists for: a publication node answers
+ * "who reported this", and scoping to it answers "and what did they report". Method
+ * scoping is the same move one level up — every interaction a technique has produced.
+ */
+export interface Scope {
+  readonly kind: 'publication' | 'system'
+  /** Publication keys, or experimental system names. */
+  readonly keys: readonly string[]
+  readonly label: string
+}
 
 export interface NetworkSettings {
   /** Hide interactions scoring below this. Most reported interactions are weak. */
@@ -64,6 +79,11 @@ interface AppState {
   compareWith: string | null
 
   /** BioGRID gene id the view is centred on, if any. */
+  scope: Scope | null
+  scopeDetail: PublicationSummary | null
+  literatureQuery: string
+  literatureResults: PublicationHit[]
+
   focusId: number | null
   focus: ProteinDetail | null
   /**
@@ -101,6 +121,12 @@ interface AppState {
   selectNetworkNode: (index: number | null) => void
   compareTo: (datasetId: string | null) => Promise<void>
   mergeWith: (datasetId: string) => Promise<void>
+  /**
+   * Restrict the network to one publication's or one method's interactions, and show
+   * it. Passing null returns to the whole network.
+   */
+  setScope: (scope: Scope | null) => Promise<void>
+  searchLiterature: (query: string) => Promise<void>
   /** Centre the network on one protein and list its interactions. */
   focusProtein: (biogridId: number | null) => Promise<void>
   /** Step back to the previously focused protein, or to the whole network. */
@@ -148,6 +174,10 @@ export const useApp = create<AppState>((set, get) => ({
 
   comparison: null,
   compareWith: null,
+  scope: null,
+  scopeDetail: null,
+  literatureQuery: '',
+  literatureResults: [],
   focusId: null,
   focus: null,
   focusHistory: [],
@@ -198,7 +228,12 @@ export const useApp = create<AppState>((set, get) => ({
       })
       set({ pendingEntries: null })
       await get().refreshDatasets()
-      await get().selectDataset(result.datasetId)
+      // refreshDatasets selects the first dataset when none is active, so re-selecting
+      // the same one here would redo every query behind it — and, before this was
+      // noticed, silently cleared state that had just been populated.
+      if (get().activeDatasetId !== result.datasetId) {
+        await get().selectDataset(result.datasetId)
+      }
     } catch (e) {
       set({ error: message(e) })
     } finally {
@@ -216,7 +251,16 @@ export const useApp = create<AppState>((set, get) => ({
   cancelEntryChoice: () => set({ pendingEntries: null }),
 
   async selectDataset(datasetId) {
-    set({ activeDatasetId: datasetId, selectedNodeId: null, layout: null })
+    set({
+      activeDatasetId: datasetId,
+      selectedNodeId: null,
+      layout: null,
+      scope: null,
+      scopeDetail: null,
+      focusId: null,
+      focus: null,
+      literatureResults: [],
+    })
     if (datasetId === null) {
       set({ organisms: [], activeOrganismId: null })
       return
@@ -226,11 +270,13 @@ export const useApp = create<AppState>((set, get) => ({
     // Default to the most abundant organism: the whole-dataset view of a
     // cross-species set is rarely what anyone means.
     await get().selectOrganism(organisms[0]?.organismId ?? null)
+    await get().searchLiterature(get().literatureQuery)
   },
 
   async selectOrganism(organismId) {
     set({ activeOrganismId: organismId, selectedNodeId: null, selectedNodeIndex: null })
     await rebuildLayout(set, get)
+    await get().searchLiterature(get().literatureQuery)
   },
 
   async setView(view) {
@@ -248,6 +294,59 @@ export const useApp = create<AppState>((set, get) => ({
 
   selectNetworkNode: (index) =>
     set({ selectedNodeIndex: get().selectedNodeIndex === index ? null : index }),
+
+  async setScope(scope) {
+    const dataset = get().activeDatasetId
+    if (dataset === null) return
+
+    // Scoping and focusing are alternative questions, not composable ones: a
+    // publication's graph centred on one of its proteins is the protein's ego view
+    // with most of the publication missing, which is nobody's question.
+    set({ scope, focusId: null, focus: null, focusHistory: [], openResource: null })
+
+    if (scope === null) {
+      set({ scopeDetail: null })
+      await rebuildLayout(set, get)
+      return
+    }
+
+    set({ view: 'network', busy: 'Building interaction graph' })
+    try {
+      const detail =
+        scope.kind === 'publication' && scope.keys[0]
+          ? await api.publication(dataset, scope.keys[0])
+          : null
+      set({ scopeDetail: detail, error: null })
+    } catch (e) {
+      set({ error: message(e) })
+    } finally {
+      set({ busy: null })
+    }
+    await rebuildLayout(set, get)
+  },
+
+  async searchLiterature(query) {
+    set({ literatureQuery: query })
+    const dataset = get().activeDatasetId
+    if (dataset === null) {
+      set({ literatureResults: [] })
+      return
+    }
+    try {
+      const organismId = get().activeOrganismId
+      const results =
+        query.trim() === ''
+          ? await api.topPublications(dataset, 15, organismId ?? undefined)
+          : await api.findPublications(dataset, query, 25)
+      set({ literatureResults: results })
+    } catch (e) {
+      // Do not swallow this. An empty list looks like "no literature here", which is
+      // a claim about the data; a failed query is a claim about the tool, and the two
+      // must not be confused.
+      console.error('literature search failed', e)
+      set({ literatureResults: [], error: message(e) })
+    }
+  },
 
   async focusProtein(biogridId) {
     const dataset = get().activeDatasetId
@@ -412,9 +511,12 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
     return
   }
 
+  const { scope } = get()
   const query = {
     datasetId: activeDatasetId,
     ...(activeOrganismId === null ? {} : { organismId: activeOrganismId }),
+    ...(scope?.kind === 'publication' ? { publications: scope.keys } : {}),
+    ...(scope?.kind === 'system' ? { systems: scope.keys } : {}),
   }
 
   set({ busy: view === 'center' ? 'Computing layout' : 'Building network' })
@@ -458,8 +560,12 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
     // threshold does not apply: filtering here can empty the canvas while the panel
     // still lists forty partners, which reads as a bug rather than as a filter. Trust
     // stays visible as edge colour and width instead.
+    // Neither a focused protein nor a scoped publication applies the trust threshold:
+    // both are requests to see a specific, bounded set of interactions in full.
+    // Trust stays visible as edge colour and weight.
+    const unfiltered = focusId !== null || scope !== null
     const full = await api.graph(query, {
-      minScore: focusId === null ? networkSettings.minTrust : 0,
+      minScore: unfiltered ? 0 : networkSettings.minTrust,
     })
 
     // Density limits are applied *within* the neighbourhood — capping globally first
@@ -472,7 +578,9 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
 
     const graph = scoped.reduce({
       maxEdges: networkSettings.maxEdges,
-      ...(focusIndex === undefined ? { minDegree: networkSettings.minDegree } : {}),
+      ...(focusIndex === undefined && scope === null
+        ? { minDegree: networkSettings.minDegree }
+        : {}),
     })
 
     const centre = focusId === null ? undefined : graph.index(focusId)
@@ -486,8 +594,8 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
       networkStats: {
         nodes: network.nodes.length,
         edges: network.edges.length,
-        // Focusing ignores the threshold, so nothing is hidden by it.
-        hidden: focusId === null ? scored.length - kept.length : 0,
+        // Focusing and scoping ignore the threshold, so nothing is hidden by it.
+        hidden: unfiltered ? 0 : scored.length - kept.length,
       },
       error: null,
     })

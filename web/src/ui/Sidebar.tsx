@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useApp } from './store'
 import { api } from '../api'
+import { LiteraturePanel } from './LiteraturePanel'
 import { ProteinPanel } from './ProteinPanel'
 
 export function Sidebar() {
@@ -177,6 +178,8 @@ export function Sidebar() {
           )}
         </section>
       )}
+
+      <LiteraturePanel />
 
       <ProteinPanel />
 
