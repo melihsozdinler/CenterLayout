@@ -141,6 +141,20 @@ test('database links are configurable', async ({ page }) => {
   await expect(page.locator('.resource-list li').filter({ hasText: 'Reactome' })).toBeVisible()
 })
 
+test('the app sends no headers that would block embedding', async ({ page }) => {
+  test.setTimeout(120_000)
+
+  // COEP makes the browser refuse *every* cross-origin iframe, so setting it turns
+  // each database link into "refused to connect". It was set in the vite config to
+  // allow testing DuckDB's cross-origin-isolated path, and broke embedding locally
+  // while production — GitHub Pages, which cannot set these headers — was fine.
+  // A bug visible only in development is the worst kind, so it is pinned here.
+  const response = await page.request.get('/')
+  const headers = response.headers()
+  expect(headers['cross-origin-embedder-policy']).toBeUndefined()
+  expect(headers['cross-origin-resource-policy']).toBeUndefined()
+})
+
 test('rejects a resource URL that is not a web address', async ({ page }) => {
   test.setTimeout(120_000)
 

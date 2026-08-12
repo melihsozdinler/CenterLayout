@@ -27,13 +27,12 @@ export default defineConfig({
     sourcemap: true,
     chunkSizeWarningLimit: 4096,
   },
-  server: {
-    // Not required for the single-threaded duckdb bundle we ship (GitHub Pages
-    // cannot set these headers), but enabling them in dev lets us test the
-    // cross-origin-isolated path locally.
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-    },
-  },
+  // No COOP/COEP headers. They were here to let the cross-origin-isolated DuckDB
+  // path be tested locally, and they cost more than they were worth: with COEP set,
+  // the browser refuses *every* cross-origin iframe, so the links out to BioGRID,
+  // UniProt and IntAct rendered as "refused to connect" — locally only, since GitHub
+  // Pages cannot set these headers and production was therefore fine. A bug that
+  // appears only in development is worse than one that appears everywhere.
+  //
+  // The shipped DuckDB bundle is single-threaded and needs neither header.
 })
