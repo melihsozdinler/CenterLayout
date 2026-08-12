@@ -35,7 +35,8 @@ largest nodes are where most* interactions *are. They are not the same methods.*
 **What it does**
 
 - Ingests BioGRID **offline** (drag in a `BIOGRID-*.tab3.zip`) or **online** (the REST
-  API, with your own access key). 76,632 records load in ~12 s at 86 MB of heap.
+  API, with your own access key). The complete release — 2.9M records, 1.55 GB
+  uncompressed — ingests in 78 seconds.
 - Rebuilds the **center layout** — organism → experimental method → publication — as a
   deterministic layout, so a figure can be regenerated exactly.
 - Adds five further views: adjacency matrix, UpSet of method combinations, bipartite

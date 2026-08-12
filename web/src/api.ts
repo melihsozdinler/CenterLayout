@@ -376,6 +376,15 @@ export interface ProLiVisApi {
     query: EvidenceQuery,
     options?: { minScore?: number; config?: string | TrustConfig },
   ): Promise<PpiGraph>
+  /**
+   * Build a graph from interactions that have already been scored.
+   *
+   * `graph()` gathers and scores from the database each time. A caller that already
+   * holds the scored pairs — which the interface always does, since it needs them to
+   * report what a filter hid — would otherwise pay for the slowest step twice. On the
+   * full BioGRID release that is eleven seconds, twice.
+   */
+  graphFrom(pairs: readonly ScoredPair[], options?: { minScore?: number }): PpiGraph
   /** Disjoint pieces of the network, largest first. */
   components(graph: PpiGraph): Components
   /**
@@ -637,6 +646,9 @@ export const api: ProLiVisApi = {
       ...(options?.minScore === undefined ? {} : { minScore: options.minScore }),
     })
   },
+
+  graphFrom: (pairs, options) =>
+    PpiGraph.fromPairs(pairs, options?.minScore === undefined ? {} : { minScore: options.minScore }),
 
   components: (graph) => connectedComponents(graph),
 

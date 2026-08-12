@@ -123,15 +123,30 @@ and will tell you so rather than failing obscurely.
 
 ### How long ingest takes
 
-Measured in Chrome on an Apple M-series laptop:
+Measured in Chrome on an Apple M-series laptop, against real releases:
 
-| Dataset | Records | Time | Peak memory |
+| Dataset | Records | Ingest | Then |
 | --- | --- | --- | --- |
-| Coronavirus (5.0.260) | 76,632 | ~12 s | 86 MB |
-| A typical single organism | ~100k–800k | 15 s – 2 min | 100–500 MB |
-| `BIOGRID-ALL` | ~3M | several minutes | 2–4 GB |
+| Coronavirus (5.0.260) | 76,632 | 12 s | aggregation queries in ~20 ms |
+| **BIOGRID-ALL (5.0.260)** | **2,916,237** | **78 s** | see below |
 
-You pay this once. The database is kept in your browser's storage, so the next visit
+The full release — 181 MB zipped, 1.55 GB uncompressed — yields 2,266,580 interactions,
+77,675 publications, 92,379 genes and 98 organisms. Afterwards:
+
+| Operation | Time |
+| --- | --- |
+| Organism list | 0.7 s |
+| Experimental systems | 0.4 s |
+| Centre layout, human (16,178 nodes) | 0.8 s |
+| Trust scoring, human (1,068,827 interactions) | 12 s |
+| Building the graph at trust ≥ 0.3 (14,567 proteins) | 11 s |
+| Maximal cliques over that graph | 0.4 s |
+
+Scoring a million interactions is the slow step, and it is inherent: every interaction
+gets seven terms computed in JavaScript so that re-weighting stays instant afterwards.
+Working one organism at a time keeps everything under a second.
+
+You pay ingest once. The database is kept in your browser's storage, so the next visit
 opens immediately — which is why the app asks you to notice if storage is unavailable.
 
 ---

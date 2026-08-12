@@ -311,11 +311,15 @@ regenerate the figure exactly.
 \section{Evaluation}
 \label{sec:evaluation}
 
-\paragraph{Scalability.} On a consumer laptop, the complete coronavirus release
-(76{,}632 records, 44\,MB uncompressed) ingests in 12\,s with an 86\,MB JavaScript heap,
-after which aggregation over the result runs in $\sim$20\,ms. Re-scoring 898
-interactions under a changed weight vector takes 1.6\,ms, which is what permits
-interactive re-weighting.
+\paragraph{Scalability.} On a consumer laptop, the complete BioGRID 5.0.260 release
+(2{,}916{,}237 records, 1.55\,GB uncompressed) ingests in 78\,s, yielding 2{,}266{,}580
+interactions across 98 organisms. The organism list then returns in 0.7\,s and the
+experimental-system breakdown in 0.4\,s; the centre layout for \emph{Homo sapiens}
+(16{,}178 nodes) takes 0.8\,s. Scoring all 1{,}068{,}827 human interactions takes
+12\,s, after which re-scoring under a changed weight vector is pure arithmetic over
+gathered evidence --- 1.6\,ms for 898 interactions --- which is what permits
+interactive re-weighting. Maximal-clique extraction over the human graph thresholded at
+$0.3$ (14{,}567 proteins, 122{,}317 interactions) takes 0.4\,s.
 
 \paragraph{Evidence structure.} Restricted to SARS-CoV-2, the network has 875 proteins
 and 880 interactions in 63 components; 724 of the 880 interactions are bridges. Raising

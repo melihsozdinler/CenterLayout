@@ -98,5 +98,11 @@ Zip members are inflated in line-aligned chunks with the reader throttled, so pe
 memory is one chunk regardless of archive size. A plain `.txt` is registered as a file
 handle and read lazily, so it never enters memory at all.
 
-Measured: 76,632 records from a 44 MB member in ~12 s at 86 MB of JavaScript heap, with
-aggregation queries over the result in ~20 ms.
+Measured against the full `BIOGRID-ALL-5.0.260` release — 181 MB zipped, 1.55 GB
+uncompressed, **2,916,237 records** — ingest takes **78 seconds**, after which the
+organism list returns in 0.7 s and the experimental-system breakdown in 0.4 s. The
+coronavirus set (76,632 records) takes 12 s.
+
+Peak memory is not reported here: `performance.memory` is quantised or stubbed in the
+headless browser used for the benchmark, and its figures were not credible enough to
+publish.
