@@ -83,6 +83,12 @@ interface AppState {
   scopeDetail: PublicationSummary | null
   literatureQuery: string
   literatureResults: PublicationHit[]
+  /**
+   * Publications the user has gathered. A reading list is built across several
+   * searches, so it is kept separately from the results currently on screen —
+   * otherwise typing a new query would silently discard the collection.
+   */
+  collected: PublicationHit[]
 
   focusId: number | null
   focus: ProteinDetail | null
@@ -127,6 +133,13 @@ interface AppState {
    */
   setScope: (scope: Scope | null) => Promise<void>
   searchLiterature: (query: string) => Promise<void>
+  /** Add or remove a publication from the collection. */
+  toggleCollected: (hit: PublicationHit) => void
+  clearCollection: () => void
+  /** Show the collection's combined interaction network. */
+  visualizeCollection: () => Promise<void>
+  /** Save the collection's interactions as a dataset of its own. */
+  saveCollection: (label?: string) => Promise<void>
   /** Centre the network on one protein and list its interactions. */
   focusProtein: (biogridId: number | null) => Promise<void>
   /** Step back to the previously focused protein, or to the whole network. */
@@ -178,6 +191,7 @@ export const useApp = create<AppState>((set, get) => ({
   scopeDetail: null,
   literatureQuery: '',
   literatureResults: [],
+  collected: [],
   focusId: null,
   focus: null,
   focusHistory: [],
@@ -345,6 +359,55 @@ export const useApp = create<AppState>((set, get) => ({
       // must not be confused.
       console.error('literature search failed', e)
       set({ literatureResults: [], error: message(e) })
+    }
+  },
+
+  toggleCollected(hit) {
+    const collected = get().collected
+    const already = collected.some((c) => c.publicationKey === hit.publicationKey)
+    set({
+      collected: already
+        ? collected.filter((c) => c.publicationKey !== hit.publicationKey)
+        : [...collected, hit],
+    })
+  },
+
+  clearCollection: () => set({ collected: [] }),
+
+  async visualizeCollection() {
+    const collected = get().collected
+    if (collected.length === 0) return
+    await get().setScope({
+      kind: 'publication',
+      keys: collected.map((c) => c.publicationKey),
+      label:
+        collected.length === 1
+          ? collected[0]!.label
+          : `${collected.length} publications`,
+    })
+  },
+
+  async saveCollection(label) {
+    const dataset = get().activeDatasetId
+    const collected = get().collected
+    if (dataset === null || collected.length === 0) return
+
+    set({ busy: 'Building dataset' })
+    try {
+      const result = await api.derive({
+        datasetId: dataset,
+        publications: collected.map((c) => c.publicationKey),
+        ...(label?.trim() ? { label: label.trim() } : {}),
+      })
+      // The collection has become an object; keeping it selected as well would leave
+      // two representations of the same thing on screen.
+      set({ collected: [], scope: null, scopeDetail: null, error: null })
+      await get().refreshDatasets()
+      await get().selectDataset(result.datasetId)
+    } catch (e) {
+      set({ error: message(e) })
+    } finally {
+      set({ busy: null })
     }
   },
 

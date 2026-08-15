@@ -141,6 +141,42 @@ between them. This is the scalable answer to the hairball: a hundred thousand
 interactions cannot be read as a node-link diagram, a hundred modules can, and any of
 them can be expanded back.
 
+## Collecting literature into a dataset
+
+Search the literature panel, tick the papers you want, and the collection builds up
+across as many separate searches as you like — a reading list, one lab's output,
+every screen that used a particular technique.
+
+**Visualize combined network** shows the union of everything ticked, as a view.
+**Save as a dataset** turns it into an object: a dataset that can be scored, compared,
+merged, exported and reopened next week like any other, listed alongside the files you
+loaded and marked as *derived*.
+
+The two are not the same. A scope lasts as long as you are looking at it; a saved
+dataset survives a reload, and records which publications produced it, so a figure made
+from it can be traced back to its evidence.
+
+```js
+const derived = await prolivis.derive({
+  datasetId,
+  publications: ['32353859', '32979938'],   // PMIDs, or any publication keys
+  label: 'SARS-CoV-2 interactome screens',
+})
+await prolivis.score({ datasetId: derived.datasetId })
+```
+
+`derive` also accepts `systems` and `organismId`, so "every co-crystal structure in
+this release" is a dataset too. At least one filter is required — deriving a copy of
+everything is what the dataset already is.
+
+Records are copied, not referenced: removing or reloading the source leaves the derived
+set untouched, which is what makes a figure built from it reproducible. Interactions
+reported by more than one of the collected papers are merged, not counted twice — two
+papers reporting the same pair is one interaction with two pieces of evidence, and
+double-counting it would inflate the replication term and every trust score computed
+from it. The BioGRID release is inherited, so a derived set stays comparable with the
+data it came from.
+
 ## Comparing and merging
 
 ```js

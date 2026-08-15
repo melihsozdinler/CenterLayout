@@ -783,3 +783,51 @@ button.link {
 .crumbs .hint {
   margin: 0;
 }
+
+.literature-results li > input[type='checkbox'] {
+  align-self: center;
+  margin: 0 2px;
+}
+
+.panel.collection h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+button.link.clear {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+
+.collected-list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.collected-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.collected-list li > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.collected-list strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

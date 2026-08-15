@@ -47,6 +47,9 @@ largest nodes are where most* interactions *are. They are not the same methods.*
 - Extracts structure: maximal cliques, biconnected components, articulation points,
   bridges, *k*-cores, and edge-removal cascades — including removal in
   *trust-ascending* order, which asks what survives if you only believe the evidence.
+- **Collects literature into datasets**: tick papers across several searches, visualize
+  their combined network, and save it as a dataset in its own right — scorable,
+  exportable, reproducible, and remembering which publications produced it.
 - **Compares and merges** datasets across organisms, releases or queries, keeping
   per-edge provenance.
 - Exports to CSV/TSV, GraphML, GML, SIF (Cytoscape) and SVG, plus a session manifest

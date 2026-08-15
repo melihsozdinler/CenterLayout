@@ -76,6 +76,12 @@ import {
   type ResourceContext,
 } from './external/resources'
 import {
+  deriveDataset,
+  describeDerivation,
+  type DeriveQuery,
+  type DeriveResult,
+} from './compare/derive'
+import {
   applySetOperation,
   compareDatasets,
   mergeDatasets,
@@ -417,6 +423,14 @@ export interface ProLiVisApi {
   compare(query: CompareQuery): Promise<ComparisonResult>
   /** Apply a set operation to a comparison. */
   setOperation(result: ComparisonResult, operation: SetOperation): ComparedEdge[]
+  /**
+   * Build a new dataset from part of an existing one — a chosen set of publications,
+   * methods or one organism. The result is a dataset in its own right: scorable,
+   * comparable, exportable, and still there next week.
+   */
+  derive(query: DeriveQuery): Promise<DeriveResult>
+  /** A readable account of what a derivation selected, for labels and provenance. */
+  describeDerivation(query: DeriveQuery): string
   /** Merge datasets into a new one, collapsing records present in more than one. */
   merge(
     sources: readonly ComparisonSide[],
@@ -667,6 +681,12 @@ export const api: ProLiVisApi = {
   },
 
   setOperation: (result, operation) => applySetOperation(result, operation),
+
+  async derive(query) {
+    return deriveDataset(await getEngine(), query)
+  },
+
+  describeDerivation: (query) => describeDerivation(query),
 
   async merge(sources, options) {
     return mergeDatasets(await getEngine(), sources, options ?? {})

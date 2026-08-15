@@ -9,7 +9,7 @@
 import type { DuckDBEngine } from '../data/duckdb'
 import { sqlString } from './schema'
 
-export type DatasetSourceKind = 'file' | 'rest'
+export type DatasetSourceKind = 'file' | 'rest' | 'derived'
 
 export interface DatasetSummary {
   readonly datasetId: string
@@ -66,7 +66,9 @@ export async function listDatasets(engine: DuckDBEngine): Promise<DatasetSummary
   return rows.map((r) => ({
     datasetId: r.dataset_id,
     label: r.label,
-    sourceKind: (r.source_kind === 'rest' ? 'rest' : 'file') as DatasetSourceKind,
+    sourceKind: (r.source_kind === 'rest' || r.source_kind === 'derived'
+      ? r.source_kind
+      : 'file') as DatasetSourceKind,
     sourceDetail: r.source_detail,
     biogridRelease: r.biogrid_release,
     loadedAt: toDate(r.loaded_at),
