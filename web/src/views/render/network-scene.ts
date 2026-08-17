@@ -252,6 +252,29 @@ export function highLevelScene(
     })
   }
 
+  // Where each label goes. Labels are centred under their module and are much wider
+  // than it, so neighbouring modules overprint each other's text — and the label is
+  // what the figure is for. Largest module first, each later label pushed down a line
+  // until it clears the ones already placed.
+  const LINE = 13
+  const labelY = new Map<string, number>()
+  const placedLabels: { x0: number; x1: number; y: number }[] = []
+  for (const node of [...nodes].sort((a, b) => b.size - a.size)) {
+    const halfWidth = (node.label.length * 11 * 0.6) / 2
+    const x0 = node.x - halfWidth
+    const x1 = node.x + halfWidth
+    let y = node.y + moduleRadius(node.size, maxSize) + LINE
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const clash = placedLabels.some(
+        (other) => Math.abs(other.y - y) < LINE - 1 && other.x0 < x1 && x0 < other.x1,
+      )
+      if (!clash) break
+      y += LINE
+    }
+    labelY.set(node.id, y)
+    placedLabels.push({ x0, x1, y })
+  }
+
   for (const node of nodes) {
     const radius = moduleRadius(node.size, maxSize)
     if (highlight !== null && node.id !== highlight) continue
@@ -268,7 +291,7 @@ export function highLevelScene(
     items.push({
       kind: 'text',
       x: node.x,
-      y: node.y + radius + 13,
+      y: labelY.get(node.id) ?? node.y + radius + 13,
       text: node.label,
       fill: style.text,
       fontSize: 11,
@@ -293,7 +316,7 @@ export function highLevelScene(
     minX = Math.min(minX, node.x - radius, node.x - halfLabel)
     maxX = Math.max(maxX, node.x + radius, node.x + halfLabel)
     minY = Math.min(minY, node.y - radius)
-    maxY = Math.max(maxY, node.y + radius + 18)
+    maxY = Math.max(maxY, node.y + radius + 18, (labelY.get(node.id) ?? 0) + 6)
   }
 
   return {

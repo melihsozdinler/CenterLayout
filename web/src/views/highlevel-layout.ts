@@ -180,6 +180,11 @@ export function highLevelLayout(
     const layout = networkLayout(graph, {
       mode: 'force',
       radius,
+      // Stronger centring than the protein network uses. There are at most sixty
+      // modules and they are densely linked, so the default lets a weakly connected
+      // one drift until the drawing is three times wider than it is tall — which
+      // wastes most of a page, and says nothing the link width does not already say.
+      gravity: 0.45,
       ...(options.seed === undefined ? {} : { seed: options.seed }),
     })
 
@@ -198,12 +203,25 @@ export function highLevelLayout(
     const median = distances[Math.floor(distances.length / 2)] ?? 0
     const scale = median > 0 ? (radius * 0.55) / median : 1
 
-    const points = layout.nodes.map((node) => ({
-      id: node.id,
-      x: node.x * scale,
-      y: node.y * scale,
-      r: moduleRadius(high.nodes[node.id]?.size ?? 1, maxSize),
-    }))
+    // Then pull in whatever the springs flung to the far distance. A module joined to
+    // the rest by one weak link settles as far out as the layout will let it, and one
+    // such module can double the width of the drawing while halving the size everything
+    // is read at. Direction is kept, which is what the arrangement means; the distance
+    // is a balance of forces rather than a measured quantity, and the link's width and
+    // colour already say how little evidence connects it.
+    const cap = radius * 1.25
+    const points = layout.nodes.map((node) => {
+      const x = node.x * scale
+      const y = node.y * scale
+      const reach = Math.hypot(x, y)
+      const pull = reach > cap ? cap / reach : 1
+      return {
+        id: node.id,
+        x: x * pull,
+        y: y * pull,
+        r: moduleRadius(high.nodes[node.id]?.size ?? 1, maxSize),
+      }
+    })
     separate(points, 18)
     for (const point of points) placed.set(point.id, { x: point.x, y: point.y })
   }
