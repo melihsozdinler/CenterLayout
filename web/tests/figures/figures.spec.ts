@@ -516,9 +516,10 @@ function descentTable(levels: readonly DescentLevel[]): string {
     ...rows,
     '  \\bottomrule',
     '\\end{tabular}',
+    // Grouped, so the size change cannot leak into whatever follows the table.
     last
-      ? `\n\\medskip\n\\footnotesize After the last step, ${tex(last.largest)} proteins ` +
-        'remain, which is drawn protein by protein.'
+      ? `\n\\medskip\n{\\footnotesize After the last step, ${tex(last.largest)} proteins ` +
+        'remain, which is drawn protein by protein.}'
       : '',
     '',
   ].join('\n')
