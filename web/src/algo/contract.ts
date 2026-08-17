@@ -295,12 +295,21 @@ export function autoContract(
   const structural = groupsFor(graph, 'biconnected-components').groups.filter(
     (group) => group.length >= 2,
   )
-  const largest = structural.reduce((max, group) => Math.max(max, group.length), 0)
+  const sizes = structural.map((group) => group.length).sort((a, b) => b - a)
+  const largest = sizes[0] ?? 0
+  const second = sizes[1] ?? 0
 
-  // "Decomposes" means more than one module and no module that is essentially the whole
-  // graph. The 90% allows a periphery of bridges to be peeled off a core without that
-  // counting as having divided it.
-  const decomposes = structural.length >= 2 && largest < graph.order * 0.9
+  // "Decomposes" needs more than one module, no module that is essentially the whole
+  // graph, and — the part that is easy to miss — a *second* module worth drawing.
+  //
+  // The human interactome fails on the last of these in a way the first two do not
+  // catch: biconnected components split it into a core of 22,182 proteins and seven
+  // thousand two-protein bridges, so the picture is one huge node ringed by specks.
+  // That is a true statement about the network and a useless level to read it at.
+  const decomposes =
+    structural.length >= 2 &&
+    largest < graph.order * 0.9 &&
+    second >= Math.max(3, graph.order * 0.01)
 
   const groups = decomposes
     ? structural
@@ -370,8 +379,21 @@ export function foldSmallModules(
   if (high.nodes.length <= maxModules || maxModules < 2) return high
 
   const bySize = [...high.nodes].sort((a, b) => b.size - a.size || (a.id < b.id ? -1 : 1))
-  const keep = bySize.slice(0, maxModules - 1)
-  const folded = bySize.slice(maxModules - 1)
+
+  // Cut where the size actually changes, so equally sized modules share a fate. Taking
+  // the largest `maxModules - 1` outright would, on a network whose tail is seven
+  // thousand single proteins, keep fifty-nine of them for no reason anyone could state
+  // and fold the rest.
+  let cut = 0
+  for (let k = 1; k <= maxModules - 1 && k < bySize.length; k += 1) {
+    if (bySize[k - 1]!.size > bySize[k]!.size) cut = k
+  }
+  // Everything ties: no boundary exists, so keep the largest few and say so in the
+  // label of what was folded.
+  if (cut === 0) cut = maxModules - 1
+
+  const keep = bySize.slice(0, cut)
+  const folded = bySize.slice(cut)
   const foldedIds = new Set(folded.map((n) => n.id))
 
   const FOLD_ID = 'gsmall'

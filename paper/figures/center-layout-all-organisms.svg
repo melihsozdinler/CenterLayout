@@ -5063,7 +5063,7 @@
 <circle cx="-265.905" cy="-337.926" r="7.844" fill="#f2d64b" stroke="rgba(0,0,0,0.28)" stroke-width="1" opacity="0.9"/>
 <circle cx="-177.86" cy="-391.492" r="5.115" fill="#f2d64b" stroke="rgba(0,0,0,0.28)" stroke-width="1" opacity="0.9"/>
 <circle cx="-79.599" cy="-422.568" r="5.115" fill="#f2d64b" stroke="rgba(0,0,0,0.28)" stroke-width="1" opacity="0.9"/>
-<text x="0" y="0" fill="#ffffff" font-size="15" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">cv</text>
+<text x="0" y="49" fill="#1c2024" font-size="15" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">CORONAVIRUS 5.0.260</text>
 <text x="246.259" y="-147.602" fill="#1c2024" font-size="13" font-family="system-ui, sans-serif" text-anchor="start" dominant-baseline="central" font-weight="600" transform="rotate(329.063 246.259 -147.602)">Reconstituted Complex</text>
 <text x="161.25" y="235.335" fill="#1c2024" font-size="13" font-family="system-ui, sans-serif" text-anchor="start" dominant-baseline="central" font-weight="600" transform="rotate(55.581 161.25 235.335)">Co-crystal Structure</text>
 <text x="-73.848" y="278.471" fill="#1c2024" font-size="13" font-family="system-ui, sans-serif" text-anchor="end" dominant-baseline="central" font-weight="600" transform="rotate(284.852 -73.848 278.471)">Affinity Capture-Western</text>

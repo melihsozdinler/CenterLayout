@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-508.6884659719755 -359.3433257645015 1091.890642774398 858.1168684265313" width="1092" height="858">
+<title>High-level graph — Community 1: S, M, nsp6 +5621</title>
+<rect x="-508.6884659719755" y="-359.3433257645015" width="1091.890642774398" height="858.1168684265313" fill="#ffffff"/>
+<line x1="76.966" y1="267.64" x2="-114.363" y2="267.79" stroke="rgba(169, 179, 206, 0.4449690801324153)" stroke-width="7.8"/>
+<line x1="1.57" y1="44.809" x2="-114.363" y2="267.79" stroke="rgba(172, 182, 207, 0.43501866721068877)" stroke-width="6.683387143451406"/>
+<line x1="203.645" y1="-103.134" x2="-114.363" y2="267.79" stroke="rgba(170, 180, 206, 0.44107767434678274)" stroke-width="5.929141150931715"/>
+<line x1="76.966" y1="267.64" x2="1.57" y2="44.809" stroke="rgba(172, 182, 207, 0.43487741678771685)" stroke-width="5.657566831955011"/>
+<line x1="203.645" y1="-103.134" x2="76.966" y2="267.64" stroke="rgba(171, 181, 206, 0.4383749038829172)" stroke-width="5.212540357588554"/>
+<line x1="203.645" y1="-103.134" x2="1.57" y2="44.809" stroke="rgba(173, 182, 207, 0.43187487255355883)" stroke-width="4.9819517683701875"/>
+<line x1="238.347" y1="84.852" x2="-114.363" y2="267.79" stroke="rgba(170, 180, 206, 0.4430272038078226)" stroke-width="4.679810903359417"/>
+<line x1="238.347" y1="84.852" x2="1.57" y2="44.809" stroke="rgba(172, 181, 207, 0.43593087165676053)" stroke-width="4.60739988825973"/>
+<line x1="-114.363" y1="267.79" x2="-286.688" y2="72.328" stroke="rgba(172, 181, 207, 0.4373141852034589)" stroke-width="4.382495399008739"/>
+<line x1="238.347" y1="84.852" x2="76.966" y2="267.64" stroke="rgba(171, 180, 206, 0.43990689607485994)" stroke-width="4.117001293786936"/>
+<line x1="76.966" y1="267.64" x2="-286.688" y2="72.328" stroke="rgba(171, 181, 206, 0.437603852420267)" stroke-width="3.885146288011928"/>
+<line x1="1.57" y1="44.809" x2="-286.688" y2="72.328" stroke="rgba(173, 182, 207, 0.43228670330969826)" stroke-width="3.9678523372390764"/>
+<line x1="203.645" y1="-103.134" x2="238.347" y2="84.852" stroke="rgba(172, 181, 207, 0.4362308806101681)" stroke-width="3.6420385942015914"/>
+<line x1="203.645" y1="-103.134" x2="-286.688" y2="72.328" stroke="rgba(172, 181, 207, 0.43603683482600386)" stroke-width="3.6070970321643356"/>
+<line x1="238.347" y1="84.852" x2="-286.688" y2="72.328" stroke="rgba(172, 181, 207, 0.43684779943198426)" stroke-width="2.8914478345091688"/>
+<line x1="76.966" y1="267.64" x2="-12.793" y2="-247.646" stroke="rgba(173, 182, 207, 0.43329337933779205)" stroke-width="2.5172655492981617"/>
+<line x1="-114.363" y1="267.79" x2="-12.793" y2="-247.646" stroke="rgba(172, 182, 207, 0.43425164209735356)" stroke-width="2.289516485946977"/>
+<line x1="-114.363" y1="267.79" x2="-210.902" y2="-139.148" stroke="rgba(167, 177, 206, 0.45533252598926244)" stroke-width="1.8305125770445438"/>
+<line x1="1.57" y1="44.809" x2="-12.793" y2="-247.646" stroke="rgba(174, 184, 207, 0.4269709660531414)" stroke-width="1.9653499928627844"/>
+<line x1="76.966" y1="267.64" x2="-210.902" y2="-139.148" stroke="rgba(165, 175, 206, 0.4616506781576497)" stroke-width="1.7148398774042786"/>
+<line x1="203.645" y1="-103.134" x2="-12.793" y2="-247.646" stroke="rgba(175, 184, 207, 0.4263873655599808)" stroke-width="1.8644324476956629"/>
+<line x1="238.347" y1="84.852" x2="-12.793" y2="-247.646" stroke="rgba(172, 182, 207, 0.4343307960002412)" stroke-width="1.7914637271573641"/>
+<line x1="203.645" y1="-103.134" x2="-210.902" y2="-139.148" stroke="rgba(166, 177, 206, 0.4559103665152187)" stroke-width="1.6592073031674643"/>
+<line x1="1.57" y1="44.809" x2="-210.902" y2="-139.148" stroke="rgba(172, 182, 207, 0.43431417818119833)" stroke-width="1.681881576179826"/>
+<line x1="238.347" y1="84.852" x2="-210.902" y2="-139.148" stroke="rgba(168, 178, 206, 0.44864592605427267)" stroke-width="1.488284167382403"/>
+<line x1="-286.688" y1="72.328" x2="-12.793" y2="-247.646" stroke="rgba(175, 184, 207, 0.4265928267956501)" stroke-width="1.5108568313947428"/>
+<line x1="-286.688" y1="72.328" x2="-210.902" y2="-139.148" stroke="rgba(172, 182, 207, 0.4342342140100832)" stroke-width="1.386052850795245"/>
+<line x1="76.966" y1="267.64" x2="371.102" y2="374.254" stroke="rgba(163, 174, 205, 0.46745043156786314)" stroke-width="1.1141573037075032"/>
+<line x1="-114.363" y1="267.79" x2="371.102" y2="374.254" stroke="rgba(167, 178, 206, 0.45187095349706285)" stroke-width="1.1324728392658572"/>
+<line x1="-210.902" y1="-139.148" x2="-12.793" y2="-247.646" stroke="rgba(174, 183, 207, 0.42810805084835435)" stroke-width="0.9662364196329286"/>
+<line x1="203.645" y1="-103.134" x2="371.102" y2="374.254" stroke="rgba(172, 181, 207, 0.4364868597854597)" stroke-width="0.9539050186103897"/>
+<line x1="238.347" y1="84.852" x2="371.102" y2="374.254" stroke="rgba(171, 181, 206, 0.43867910838158974)" stroke-width="0.9404954173436048"/>
+<line x1="1.57" y1="44.809" x2="371.102" y2="374.254" stroke="rgba(177, 186, 207, 0.4166648510043808)" stroke-width="0.8888571039243429"/>
+<text x="-18.699" y="264.715" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">12412</text>
+<text x="-56.397" y="153.3" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">8768</text>
+<text x="44.641" y="79.328" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">6664</text>
+<text x="39.268" y="153.225" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">5977</text>
+<text x="140.305" y="79.253" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">4932</text>
+<text x="102.607" y="-32.162" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">4430</text>
+<text x="61.992" y="173.321" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">3813</text>
+<text x="119.958" y="61.831" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">3672</text>
+<text x="-200.526" y="167.059" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">3251</text>
+<text x="157.656" y="173.246" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">2787</text>
+<text x="-104.861" y="166.984" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">2411</text>
+<text x="-142.559" y="55.569" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">2542</text>
+<text x="220.996" y="-12.141" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">2046</text>
+<text x="-41.522" y="-18.403" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">1996</text>
+<text x="-24.171" y="75.59" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">1108</text>
+<text x="32.086" y="6.997" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">747</text>
+<text x="-63.578" y="7.072" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">562</text>
+<text x="-162.632" y="61.321" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">269</text>
+<text x="-5.611" y="-104.418" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">344</text>
+<text x="-66.968" y="61.246" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">212</text>
+<text x="95.426" y="-178.39" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">287</text>
+<text x="112.777" y="-84.397" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">249</text>
+<text x="-3.629" y="-124.141" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">187</text>
+<text x="-104.666" y="-50.169" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">197</text>
+<text x="13.722" y="-30.148" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">120</text>
+<text x="-149.741" y="-90.659" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">128</text>
+<text x="-248.795" y="-36.41" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">87</text>
+<text x="224.034" y="317.947" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">25</text>
+<text x="128.37" y="318.022" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">28</text>
+<text x="-111.847" y="-196.397" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">7</text>
+<text x="287.373" y="132.56" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">6</text>
+<text x="304.724" y="226.553" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">5</text>
+<text x="186.336" y="206.532" fill="#666e78" font-size="10" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central">2</text>
+<circle cx="203.645" cy="-103.134" r="44" fill="#3b4fd8" stroke="rgba(172, 181, 207, 0.9)" stroke-width="1.6955862063361107" opacity="1"/>
+<circle cx="238.347" cy="84.852" r="40.783" fill="#d8453c" stroke="rgba(170, 180, 206, 0.9)" stroke-width="1.7380729578420202" opacity="1"/>
+<circle cx="76.966" cy="267.64" r="40.035" fill="#1c9c6b" stroke="rgba(167, 177, 206, 0.9)" stroke-width="1.8227338095200656" opacity="1"/>
+<circle cx="1.57" cy="44.809" r="39.872" fill="#c9761f" stroke="rgba(172, 181, 207, 0.9)" stroke-width="1.694574374787252" opacity="1"/>
+<circle cx="-114.363" cy="267.79" r="36.753" fill="#7a52c9" stroke="rgba(167, 177, 206, 0.9)" stroke-width="1.8331183170646597" opacity="1"/>
+<circle cx="-286.688" cy="72.328" r="32.629" fill="#0e8fa8" stroke="rgba(170, 180, 206, 0.9)" stroke-width="1.7346879455827602" opacity="1"/>
+<circle cx="-210.902" cy="-139.148" r="22.482" fill="#b3327a" stroke="rgba(148, 161, 203, 0.9)" stroke-width="2.3756318450432543" opacity="1"/>
+<circle cx="-12.793" cy="-247.646" r="21.697" fill="#6b8f1f" stroke="rgba(160, 171, 205, 0.9)" stroke-width="2.0358407772234273" opacity="1"/>
+<circle cx="371.102" cy="374.254" r="16.52" fill="#a8541c" stroke="rgba(112, 130, 198, 0.9)" stroke-width="3.4091633211740304" opacity="1"/>
+<text x="203.645" y="-99.134" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">1276</text>
+<text x="203.645" y="-46.134" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 1: TGOLN2, ORF8, HSPA5 +1273</text>
+<text x="238.347" y="88.852" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">1017</text>
+<text x="238.347" y="138.635" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 2: LMNA, ERGIC3, AQP6 +1014</text>
+<text x="76.966" y="271.64" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">961</text>
+<text x="76.966" y="320.675" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 3: ORF3a, RHOA, CDC42 +958</text>
+<text x="1.57" y="48.809" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">949</text>
+<text x="1.57" y="97.681" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 4: CDC123, MFSD5, SLC7A1 +946</text>
+<text x="-114.363" y="271.79" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">734</text>
+<text x="-114.363" y="317.543" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 5: ORF7b, M, S +731</text>
+<text x="-286.688" y="76.328" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">492</text>
+<text x="-286.688" y="117.956" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 6: TTYH1, C3orf52, ATP2A3 +489</text>
+<text x="-210.902" y="-135.148" fill="#ffffff" font-size="11.240977884512946" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">102</text>
+<text x="-210.902" y="-103.666" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 7: SGTA, BAG6, PSEN1 +99</text>
+<text x="-12.793" y="-243.646" fill="#ffffff" font-size="10.848624718741142" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">84</text>
+<text x="-12.793" y="-212.949" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 8: ATP6AP2, ATP6V0A1, ATP6V0D1 +81</text>
+<text x="371.102" y="378.254" fill="#ffffff" font-size="9" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">9</text>
+<text x="371.102" y="403.774" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 9: RAB27A, RAB27B, SYTL5 +6</text>
+</svg>

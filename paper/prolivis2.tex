@@ -15,6 +15,10 @@
 \usepackage{url}
 \usepackage[hidelinks]{hyperref}
 \usepackage{caption}
+
+% Measured numbers, regenerated with the figures by tests/figures/figures.spec.ts.
+\input{figures/numbers.tex}
+\input{figures/numbers-all.tex}
 \captionsetup{font=small,labelfont=bf}
 
 \title{ProLiVis 2.0: literature-centric visualization of protein--protein
@@ -47,10 +51,11 @@ published figures regenerable from a session manifest. Third, an implementation 
 runs entirely in a web browser, with an embedded analytical database, requiring no
 installation and uploading no data.
 
-On BioGRID release 5.0.260 restricted to SARS-CoV-2, 724 of 880 reported interactions
-are bridges in the graph-theoretic sense and raising the trust threshold to $0.2$ leaves
-126 of them: the large majority of reported interactions rest on a single publication,
-a fact no existing view of the database makes visible.
+On BioGRID release 5.0.260 restricted to SARS-CoV-2, \CovSinglePublication{} of
+\CovInteractions{} reported interactions --- \CovSinglePercent\% --- rest on a single
+publication, and raising the trust threshold to $\CovThreshold$ leaves
+\CovThresholdInteractions{} of them. That the large majority of a curated interaction
+network is unreplicated is a fact no existing view of the database makes visible.
 \end{abstract}
 
 \section{Introduction}
@@ -289,10 +294,49 @@ sparsely studied organism they carry most of the answer, since the reported netw
 largely bridges (\S\ref{sec:evaluation}). But a well-studied core \emph{is}
 biconnected: the decomposition returns it unchanged, and a drill-down built on it
 descends forever into the same picture. We therefore contract by biconnected components
-when they decompose the graph --- more than one component, none holding essentially all
-of it --- and by modularity otherwise, using Louvain \cite{louvain} weighted by trust,
-so that a community is held together by evidence rather than by edge count. Modularity
-always divides, and divides again, which is the property the recursion needs.
+when they decompose the graph and by modularity otherwise, using Louvain
+\cite{louvain} weighted by trust, so that a community is held together by evidence
+rather than by edge count. Modularity always divides, and divides again, which is the
+property the recursion needs.
+
+``Decomposes'' has to be stated carefully, and the human interactome shows why. Its
+biconnected decomposition is not degenerate in the obvious sense --- it returns
+thousands of components, and its largest holds 76\% of the proteins rather than all of
+them --- but the remainder are two-protein bridges, so the drawing is one huge node
+ringed by specks. We therefore require a \emph{second} module worth drawing: more than
+one component, none holding more than 90\% of the proteins, and a second-largest
+holding at least 1\% of the proteins and at least three of them.
+
+Which grouping this selects is itself a measurement, reported in
+\S\ref{sec:evaluation}: the structural decomposition is chosen for barely-studied
+networks, whose reported interactions are little more than a forest of bridges, and
+modularity for everything that has been studied enough to have a core.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/high-level.pdf}
+  \caption{The complete human interactome of BioGRID 5.0.260 --- 29{,}104 proteins and
+  1{,}047{,}820 interactions, no trust threshold --- read one level up. Node area is
+  proteins in the module, the number inside is that count, the ring is the mean trust
+  of the module's internal interactions, and link width is the number of interactions
+  spanning two modules. Fourteen communities, computed in 2.0\,s. Community 14 is drawn
+  far out because almost nothing connects it, which is a property of the network rather
+  than of the layout.}
+  \label{fig:highlevel}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\textwidth]{figures/high-level-drill.pdf}
+  \caption{Community 1 of Figure~\ref{fig:highlevel} opened: 5{,}624 proteins and
+  141{,}011 interactions, contracted again into nine communities. Link labels are
+  interaction counts. The membership is coherent without having been told anything
+  about biology --- a vesicular-transport and ER community (TGOLN2, HSPA5), a
+  v-ATPase community (ATP6AP2, ATP6V0A1, ATP6V0D1), a small RAB27A/RAB27B/SYTL5
+  secretory community, and two communities carrying the SARS-CoV-2 proteins that this
+  organism's records interact with.}
+  \label{fig:highlevel-drill}
+\end{figure}
 
 Two details matter for correctness of the picture rather than of the algorithm.
 Biconnected components share their articulation points, so the groups are made disjoint
@@ -321,6 +365,18 @@ browser's Origin Private File System. All parsing, coercion and aggregation happ
 the database; the application never iterates over interaction records in JavaScript.
 Archive members are inflated in line-aligned chunks with the reader throttled, so peak
 memory is bounded by one chunk regardless of archive size.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/interface-modules-drill.png}
+  \caption{The interface, having opened one community of the human interactome. The
+  breadcrumb above the canvas records the descent and returns to any level of it; the
+  numbers on the links are interaction counts, and the panel on the left is the same
+  trust threshold, density and literature search that apply to every view. The whole
+  application is static files: this is a browser tab, with the release in an embedded
+  analytical database beneath it.}
+  \label{fig:interface}
+\end{figure}
 
 Columns are resolved by alias onto a canonical set, because BioGRID's tabular formats
 disagree: the bulk \texttt{tab3} files and the \texttt{tab2} output of the REST service
@@ -356,32 +412,69 @@ gathered evidence --- 1.6\,ms for 898 interactions --- which is what permits
 interactive re-weighting. Maximal-clique extraction over the human graph thresholded at
 $0.3$ (14{,}567 proteins, 122{,}317 interactions) takes 0.4\,s.
 
-\paragraph{Reading a large network one level up.} The complete human interactome in
-release 5.0.260 --- 29{,}104 proteins and 1{,}047{,}820 interactions, with no trust
-threshold applied --- contracts to 60 modules in 1.6\,s. Biconnected components
-decompose it, but its largest module is a biconnected core of 22{,}182 proteins, which
-is precisely the case a structural decomposition cannot subdivide. Opening that core
-contracts it by modularity into 11 communities (2.3\,s, largest 5{,}112); opening the
-largest of those gives 11 communities (0.2\,s, largest 1{,}152); the next gives 10
-(largest 240), at which point the level is drawn as proteins. Four steps take a reader
-from a million interactions to 240 proteins, each step a click, and no protein is
-dropped along the way.
+\paragraph{Reading a large network one level up.} Table~\ref{tab:drilldown} records the
+descent through the complete human interactome of release 5.0.260 --- \HumanProteins{}
+proteins and \HumanInteractions{} interactions, with no trust threshold applied ---
+opening the largest module at each step, which is the worst case. \HumanSteps{} steps
+take a reader from a million interactions to a module of \HumanLeaf{} proteins that is
+drawn protein by protein, and the whole descent costs \HumanDescentSeconds{}\,s of
+computation. Figures~\ref{fig:highlevel}
+and~\ref{fig:highlevel-drill} are its first two levels.
 
-\paragraph{Evidence structure.} Restricted to SARS-CoV-2, the network has 875 proteins
-and 880 interactions in 63 components; 724 of the 880 interactions are bridges. Raising
-the trust threshold to $0.2$ leaves 126 interactions and 136 proteins. The reported
-network is, structurally, a thin tree of unreplicated claims around a small
-well-supported core.
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{rrrlrrr}
+    \toprule
+    Level & Proteins & Interactions & Grouping & Modules & Largest & Time (s) \\
+    \midrule
+    \input{figures/drilldown.tex}
+    \bottomrule
+  \end{tabular}
+  \caption{Contracting the human interactome, opening the largest module each time.
+  Generated by the figure pipeline rather than transcribed; the underlying measurements
+  are in \texttt{paper/figures/drilldown.json}.}
+  \label{tab:drilldown}
+\end{table}
 
-\paragraph{Structural recovery.} Without supervision, maximal-clique extraction on the
-same network recovers the R2TP/prefoldin co-chaperone complex (PFDN2, UXT, URI1, PIH1D1,
-RPAP3, RUVBL1, RUVBL2, POLR2E) and the STING--TRAF3--TBK1 innate immune signalling
-module as its largest cliques.
+\paragraph{Which grouping a network needs.} Of the \OrganismsSurveyed{} organisms in
+release 5.0.260 whose physical network has at least 100 proteins,
+\OrganismsStructural{} decompose into biconnected components under the criterion of
+\S\ref{sec:highlevel}; the rest are contracted by modularity. The split is not
+arbitrary. The structural ones are the barely-studied networks --- \emph{Bos taurus}
+(605 proteins, 586 interactions), \emph{Danio rerio} (529, 545), \emph{Gallus gallus}
+(451, 472), Human Herpesvirus~1 (324, 395) --- where the reported network has scarcely
+more interactions than proteins and is therefore close to a forest of bridges. The
+well-studied ones --- human, yeast, mouse, fly, \emph{E.~coli}, \emph{Arabidopsis} ---
+have a core that is biconnected by construction, and only modularity divides them. A
+tool that offered biconnected components alone would work on the organisms nobody
+needs help reading.
 
-\paragraph{Preset behaviour.} Across all interactions, \texttt{structural-strict}
-correlates with assay directness at $r = 0.875$ against \texttt{evidence-only}'s
-$r = 0.683$, confirming that the presets order interactions differently rather than
-cosmetically.
+\paragraph{Evidence structure.} Restricted to SARS-CoV-2 in release 5.0.260, the
+physical network has \CovProteins{} proteins and \CovInteractions{} interactions in
+\CovComponents{} connected component, of which \CovBridges{} interactions are bridges
+and \CovArticulation{} proteins are articulation points. Raising the trust threshold to
+\CovThreshold{} leaves \CovThresholdInteractions{} interactions among
+\CovThresholdProteins{} proteins --- roughly a third. The reported network is a
+well-connected core wrapped in a large periphery of claims that no second publication
+has repeated.
+
+\paragraph{Structural recovery.} Maximal-clique extraction over the same network finds
+\CovCliques{} cliques of four or more proteins, the largest having \CovLargestClique{}
+members: \CovLargestCliqueMembers{}. Without being told any biology, the largest cliques
+are the SARS-CoV-2 replication--transcription complex --- nsp5, nsp9, nsp10, nsp12,
+nsp13, nsp14, nsp15, nsp16 --- together with the host proteins that co-purify with it.
+The caveat belongs with the result: these interactions come predominantly from
+affinity-capture screens, in which a clique is evidence of co-purification and not of
+simultaneous physical contact. The extraction reports what the literature asserts, which
+is the same discipline the trust model observes.
+
+\paragraph{Preset behaviour.} Over all \CovInteractions{} interactions,
+\texttt{structural-strict} correlates with the assay-directness term at
+$r = \CorrStrict$, against \texttt{evidence-only}'s $r = \CorrEvidence$ and
+\texttt{literature-aware}'s $r = \CorrLiterature$. The presets therefore order
+interactions differently rather than cosmetically, and in the direction their names
+claim; none of them is a proxy for directness alone.
 
 \paragraph{Discrimination.} \emph{To be completed.} The model should be evaluated as a
 ranker against an external reference set it never saw --- CORUM co-complex pairs

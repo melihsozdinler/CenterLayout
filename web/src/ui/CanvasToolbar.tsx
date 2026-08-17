@@ -23,6 +23,7 @@ export function CanvasToolbar() {
   const drill = useApp((s) => s.drill)
   const drillTo = useApp((s) => s.drillTo)
   const highLevel = useApp((s) => s.highLevel)
+  const moduleNote = useApp((s) => s.moduleNote)
   const updateNetwork = useApp((s) => s.updateNetwork)
   const network = useApp((s) => s.network)
   const focus = useApp((s) => s.focus)
@@ -110,9 +111,7 @@ export function CanvasToolbar() {
               proteins · click one to open it
             </span>
           )}
-          {!highLevel && drill.length > 0 && (
-            <span className="hint">small enough to draw as proteins</span>
-          )}
+          {!highLevel && moduleNote && <span className="hint">{moduleNote}</span>}
         </div>
       )}
 

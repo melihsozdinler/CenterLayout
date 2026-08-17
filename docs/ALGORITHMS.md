@@ -28,7 +28,8 @@ Hopcroft–Tarjan, iteratively.
 An **articulation point** is a protein whose removal disconnects the network; a
 **bridge** is a single interaction doing the same. Both are precisely where one badly
 supported edge does the most damage, which is why they pair naturally with the trust
-score. On the coronavirus network, 724 of 880 interactions are bridges: the periphery
+score. On the SARS-CoV-2 network of release 5.0.260, 2,848 of 34,540 interactions are
+bridges and only 32 proteins are articulation points: the periphery
 is almost entirely tree-like, and almost every peripheral protein hangs from one
 unreplicated claim.
 
@@ -107,7 +108,7 @@ way that matters: it can be applied to its own output.
 It contracts by **biconnected components** where they decompose the graph — more than
 one module, none holding essentially all of it. That is the honest first choice, being
 structural rather than optimized, and on a sparsely studied organism it is most of the
-answer: 724 of the 880 coronavirus interactions are bridges.
+answer — the sparser the network, the more of it is bridges.
 
 But a well-studied core *is* biconnected, so the decomposition returns it unchanged.
 Drilling into it would show exactly what you clicked, forever. When that happens the
@@ -123,11 +124,23 @@ Two things are done for the picture rather than for the algorithm:
   chain of bridges most modules are a single protein; dropping them would shrink the
   network slightly at every level, silently.
 
+How often is each chosen? Of the 41 organisms in release 5.0.260 whose physical network
+has at least 100 proteins, **10 decompose structurally** — *Bos taurus* (605 proteins,
+586 interactions), *Danio rerio* (529, 545), *Gallus gallus* (451, 472), Human
+Herpesvirus 1 (324, 395) and six more, all of them networks with scarcely more
+interactions than proteins. The other 31, human and yeast among them, have a core that
+is biconnected by construction and need modularity.
+
 On the full human interactome — 29,104 proteins, 1,047,820 interactions, no trust
-threshold — this is 60 modules in 1.6 s, whose largest is a biconnected core of 22,182
-proteins. Opening it gives 11 communities in 2.3 s (largest 5,112), then 11 (largest
-1,152), then 10 (largest 240), which is drawn as proteins. Four clicks from a million
-interactions to something a person can read.
+threshold — the top level is 14 communities in 2.0 s, the largest holding 5,624
+proteins. Opening it gives 9 communities (largest 1,276), then 10 (largest 267), then 8
+(largest 53), which is drawn as proteins. Four clicks and 2.2 s of computation from a
+million interactions to something a person can read.
+
+One case has no answer to give: a hub and its partners. Every division of a star scores
+worse than leaving it whole, so the contraction returns a single module — and rather
+than draw one circle, or let a click open the same picture again, the view falls back to
+drawing the proteins and says why.
 
 ## Matrix seriation
 

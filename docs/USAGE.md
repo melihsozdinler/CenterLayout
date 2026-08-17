@@ -94,12 +94,14 @@ instead — a node is a set of proteins, and a link is the evidence spanning two
 **Click a module to open it.** If what is inside is still too large to draw, it is
 contracted again, and the breadcrumb above the canvas grows a level. Any level in the
 trail takes you back to it. On the full human interactome, four clicks take you from a
-million interactions to 240 proteins.
+million interactions to 53 proteins.
 
 Modules are biconnected components where those decompose the network — a module is then
 a set of proteins that stays connected when any one of them is removed — and
-trust-weighted communities where they do not, which is what happens in a well-studied
-core. Which one you are looking at is not hidden: the modules are labelled `Module n`
+trust-weighted communities where they do not. In practice the second case is the common
+one: of the 41 organisms in release 5.0.260 with at least 100 proteins, 10 decompose
+structurally, and they are the barely-studied ones whose networks are little more than
+a forest of bridges. Which one you are looking at is not hidden: the modules are labelled `Module n`
 or `Community n` accordingly. Every protein is in exactly one module, and the smallest
 modules are folded into one node rather than dropped, so nothing leaves the picture as
 you descend. [`ALGORITHMS.md`](ALGORITHMS.md) has the reasoning.
@@ -134,8 +136,9 @@ Every interaction gets a score in `[0, 1]` from seven terms, described in full i
   remaining weights are renormalized. `coverage` tells you how much of the model was
   informed.
 - Filtering by trust is the fastest way to see how thin the evidence is. On the
-  coronavirus release, raising the threshold to 0.2 takes the network from 880
-  interactions to 126: most reported interactions rest on a single publication.
+  SARS-CoV-2 network of release 5.0.260, raising the threshold to 0.2 takes it from
+  34,540 interactions to 11,320 — and 70% of those 34,540 rest on a single
+  publication.
 - Re-weighting is instant, because evidence is gathered once and scoring is pure
   arithmetic over it. Move the weights and watch the network re-colour.
 
@@ -153,9 +156,12 @@ prolivis.autoContract(graph)              // what the Modules view draws
 ```
 
 **Cliques** are sets of proteins every one of which is reported to interact with every
-other — the graph-theoretic shadow of a complex. On the coronavirus set this recovers
-the R2TP/prefoldin co-chaperone complex and the STING–TRAF3–TBK1 module without being
-told about either.
+other — the graph-theoretic shadow of a complex. On the SARS-CoV-2 network of release
+5.0.260 the largest of the 19,136 cliques are the viral replication–transcription
+complex (nsp5, nsp9, nsp10, nsp12, nsp13, nsp14, nsp15, nsp16) with the host proteins
+that co-purify with it, found without being told any biology. Read them as
+co-purification, not as simultaneous contact: most of this evidence is affinity
+capture, and a clique reports what the literature asserts.
 
 **Articulation points and bridges** are the proteins and single interactions holding
 modules together. They are exactly where one badly supported edge does the most damage,

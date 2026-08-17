@@ -24,16 +24,33 @@ through the same code path the interface uses. Nothing is drawn by hand.
 
 ```bash
 cd ../web
-PROLIVIS_FIGURE_SOURCE=~/Downloads/BIOGRID-CORONAVIRUS-5.0.260.tab3.zip npm run figures
+PROLIVIS_FIGURE_SOURCE=~/Downloads/BIOGRID-CORONAVIRUS-5.0.260.tab3.zip \
+PROLIVIS_BIG_FIXTURE=~/Downloads/BIOGRID-ALL-5.0.260.tab3.zip npm run figures
 ```
 
 Without `PROLIVIS_FIGURE_SOURCE` the bundled 975-record sample is used, so the pipeline
-runs without a download — but the figures in the manuscript come from the full release.
-Download it from <https://downloads.thebiogrid.org/BioGRID>.
+runs without a download — but the figures in the manuscript come from the full releases.
+Download them from <https://downloads.thebiogrid.org/BioGRID>. `PROLIVIS_BIG_FIXTURE`
+is what the high-level figures and the drill-down table need: a view whose subject is a
+network too large to draw cannot be demonstrated on 975 records.
 
-`figures/figures.json` records the query, options and BioGRID release behind each
-figure. That file is the manuscript's claim to reproducibility: with a deterministic
-layout, it is sufficient to regenerate any figure exactly.
+### The numbers are generated too
+
+The manuscript does not contain a transcribed measurement. Everything in the evaluation
+is `\input` as a macro from a file the pipeline writes, so a number that changes cannot
+quietly stay in the text:
+
+| File | What it holds |
+| --- | --- |
+| `figures/figures.json` | Query, options and release behind each center-layout figure |
+| `figures/numbers.tex` | SARS-CoV-2 evidence structure, cliques, preset correlations |
+| `figures/numbers-all.tex` | Human descent, and the grouping survey across organisms |
+| `figures/drilldown.tex` | The drill-down table, as a `tabular` body |
+| `figures/evaluation.json`, `figures/groupings.json`, `figures/drilldown.json` | The same measurements, unformatted |
+
+An earlier draft quoted numbers measured on the bundled 975-record sample as though
+they came from the release. They differed by an order of magnitude. That is why the
+numbers are generated.
 
 ## Status
 

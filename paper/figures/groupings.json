@@ -1,0 +1,293 @@
+{
+  "source": "BIOGRID-ALL-5.0.260.tab3.zip",
+  "release": "5.0.260",
+  "organisms": [
+    {
+      "organism": "Homo sapiens",
+      "proteins": 29104,
+      "interactions": 1047820,
+      "strategy": "communities",
+      "modules": 14
+    },
+    {
+      "organism": "Saccharomyces cerevisiae (S288c)",
+      "proteins": 7220,
+      "interactions": 196067,
+      "strategy": "communities",
+      "modules": 12
+    },
+    {
+      "organism": "Escherichia coli (K12/W3110)",
+      "proteins": 3440,
+      "interactions": 23909,
+      "strategy": "communities",
+      "modules": 25
+    },
+    {
+      "organism": "Mus musculus",
+      "proteins": 19372,
+      "interactions": 101623,
+      "strategy": "communities",
+      "modules": 47
+    },
+    {
+      "organism": "Drosophila melanogaster",
+      "proteins": 11121,
+      "interactions": 68724,
+      "strategy": "communities",
+      "modules": 59
+    },
+    {
+      "organism": "Arabidopsis thaliana (Columbia)",
+      "proteins": 11729,
+      "interactions": 73414,
+      "strategy": "communities",
+      "modules": 36
+    },
+    {
+      "organism": "Schizosaccharomyces pombe (972h)",
+      "proteins": 3814,
+      "interactions": 14514,
+      "strategy": "communities",
+      "modules": 44
+    },
+    {
+      "organism": "Severe acute respiratory syndrome coronavirus 2",
+      "proteins": 8655,
+      "interactions": 35777,
+      "strategy": "communities",
+      "modules": 9
+    },
+    {
+      "organism": "Caenorhabditis elegans",
+      "proteins": 9074,
+      "interactions": 41998,
+      "strategy": "communities",
+      "modules": 52
+    },
+    {
+      "organism": "Rattus norvegicus",
+      "proteins": 6251,
+      "interactions": 10697,
+      "strategy": "communities",
+      "modules": 58
+    },
+    {
+      "organism": "Human papillomavirus (16)",
+      "proteins": 2764,
+      "interactions": 3194,
+      "strategy": "communities",
+      "modules": 6
+    },
+    {
+      "organism": "Plasmodium falciparum (3D7)",
+      "proteins": 1827,
+      "interactions": 3691,
+      "strategy": "communities",
+      "modules": 32
+    },
+    {
+      "organism": "Human Immunodeficiency Virus 1",
+      "proteins": 1454,
+      "interactions": 1740,
+      "strategy": "communities",
+      "modules": 9
+    },
+    {
+      "organism": "Severe acute respiratory syndrome-related coronavirus",
+      "proteins": 1568,
+      "interactions": 1947,
+      "strategy": "communities",
+      "modules": 14
+    },
+    {
+      "organism": "Xenopus laevis",
+      "proteins": 1602,
+      "interactions": 2071,
+      "strategy": "communities",
+      "modules": 38
+    },
+    {
+      "organism": "Escherichia coli (K12/MG1655)",
+      "proteins": 1294,
+      "interactions": 1962,
+      "strategy": "communities",
+      "modules": 43
+    },
+    {
+      "organism": "Candida albicans (SC5314)",
+      "proteins": 1002,
+      "interactions": 1390,
+      "strategy": "communities",
+      "modules": 53
+    },
+    {
+      "organism": "Middle-East Respiratory Syndrome-related Coronavirus",
+      "proteins": 998,
+      "interactions": 1066,
+      "strategy": "communities",
+      "modules": 14
+    },
+    {
+      "organism": "Human Herpesvirus 8",
+      "proteins": 904,
+      "interactions": 914,
+      "strategy": "communities",
+      "modules": 53
+    },
+    {
+      "organism": "Human papillomavirus (18)",
+      "proteins": 591,
+      "interactions": 601,
+      "strategy": "communities",
+      "modules": 7
+    },
+    {
+      "organism": "Human Herpesvirus 4",
+      "proteins": 505,
+      "interactions": 543,
+      "strategy": "communities",
+      "modules": 12
+    },
+    {
+      "organism": "Bos taurus",
+      "proteins": 605,
+      "interactions": 586,
+      "strategy": "biconnected-components",
+      "modules": 20
+    },
+    {
+      "organism": "Danio rerio",
+      "proteins": 529,
+      "interactions": 545,
+      "strategy": "biconnected-components",
+      "modules": 43
+    },
+    {
+      "organism": "Human papillomavirus (6b)",
+      "proteins": 485,
+      "interactions": 606,
+      "strategy": "communities",
+      "modules": 7
+    },
+    {
+      "organism": "Human papillomavirus (8)",
+      "proteins": 561,
+      "interactions": 583,
+      "strategy": "communities",
+      "modules": 4
+    },
+    {
+      "organism": "Hepatitus C Virus",
+      "proteins": 493,
+      "interactions": 491,
+      "strategy": "communities",
+      "modules": 2
+    },
+    {
+      "organism": "Human papillomavirus (31)",
+      "proteins": 541,
+      "interactions": 564,
+      "strategy": "communities",
+      "modules": 8
+    },
+    {
+      "organism": "Gallus gallus",
+      "proteins": 451,
+      "interactions": 472,
+      "strategy": "biconnected-components",
+      "modules": 14
+    },
+    {
+      "organism": "Canis familiaris",
+      "proteins": 529,
+      "interactions": 538,
+      "strategy": "communities",
+      "modules": 27
+    },
+    {
+      "organism": "Human papillomavirus (11)",
+      "proteins": 497,
+      "interactions": 520,
+      "strategy": "communities",
+      "modules": 6
+    },
+    {
+      "organism": "Human Herpesvirus 1",
+      "proteins": 324,
+      "interactions": 395,
+      "strategy": "biconnected-components",
+      "modules": 6
+    },
+    {
+      "organism": "Oryctolagus cuniculus",
+      "proteins": 369,
+      "interactions": 348,
+      "strategy": "biconnected-components",
+      "modules": 54
+    },
+    {
+      "organism": "Oryza sativa (Japonica)",
+      "proteins": 327,
+      "interactions": 339,
+      "strategy": "biconnected-components",
+      "modules": 22
+    },
+    {
+      "organism": "Macaca mulatta",
+      "proteins": 313,
+      "interactions": 306,
+      "strategy": "communities",
+      "modules": 7
+    },
+    {
+      "organism": "Vaccinia Virus",
+      "proteins": 314,
+      "interactions": 290,
+      "strategy": "biconnected-components",
+      "modules": 37
+    },
+    {
+      "organism": "Human papillomavirus (5)",
+      "proteins": 278,
+      "interactions": 283,
+      "strategy": "biconnected-components",
+      "modules": 5
+    },
+    {
+      "organism": "Human papillomavirus (33)",
+      "proteins": 187,
+      "interactions": 188,
+      "strategy": "communities",
+      "modules": 5
+    },
+    {
+      "organism": "Human Herpesvirus 5",
+      "proteins": 153,
+      "interactions": 140,
+      "strategy": "biconnected-components",
+      "modules": 21
+    },
+    {
+      "organism": "Human papillomavirus (1a)",
+      "proteins": 150,
+      "interactions": 153,
+      "strategy": "communities",
+      "modules": 4
+    },
+    {
+      "organism": "Human papillomavirus (38)",
+      "proteins": 149,
+      "interactions": 149,
+      "strategy": "communities",
+      "modules": 2
+    },
+    {
+      "organism": "Sus scrofa",
+      "proteins": 134,
+      "interactions": 110,
+      "strategy": "biconnected-components",
+      "modules": 40
+    }
+  ]
+}

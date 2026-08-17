@@ -157,10 +157,12 @@ coverage, and the file says so.
 - **`evidence-only`** uses nothing but the BioGRID record. Fully offline and free of
   any judgement about the literature — the honest choice when enrichment is
   unavailable or unwanted.
-- **`structural-strict`** is for work that needs direct physical contact. On the
-  coronavirus release it correlates with assay directness at **0.875**, against
-  `evidence-only`'s 0.683, so the preset does what its name claims rather than being
-  decorative.
+- **`structural-strict`** is for work that needs direct physical contact. Over the
+  34,540 SARS-CoV-2 interactions in release 5.0.260 it correlates with the assay
+  directness term at **0.512**, against `evidence-only`'s 0.302 and
+  `literature-aware`'s 0.325 — so the preset does what its name claims rather than
+  being decorative, while remaining a combination of seven terms rather than a proxy
+  for directness alone.
 
 Weights are editable in the interface and in the API. They are normalized to sum to
 one, so a hand-edited configuration still behaves.

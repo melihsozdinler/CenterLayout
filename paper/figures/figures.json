@@ -11,8 +11,8 @@
       "aggregateBelow": 0,
       "multiMethod": "circular-mean"
     },
-    "source": "cv.zip",
-    "biogridRelease": null
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
   },
   {
     "slug": "center-layout-aggregated",
@@ -26,8 +26,8 @@
       "aggregateBelow": 5,
       "multiMethod": "circular-mean"
     },
-    "source": "cv.zip",
-    "biogridRelease": null
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
   },
   {
     "slug": "center-layout-duplicated",
@@ -41,8 +41,8 @@
       "aggregateBelow": 0,
       "multiMethod": "duplicate"
     },
-    "source": "cv.zip",
-    "biogridRelease": null
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
   },
   {
     "slug": "center-layout-all-organisms",
@@ -56,7 +56,7 @@
       "aggregateBelow": 0,
       "multiMethod": "circular-mean"
     },
-    "source": "cv.zip",
-    "biogridRelease": null
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
   }
 ]

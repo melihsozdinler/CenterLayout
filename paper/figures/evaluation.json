@@ -1,0 +1,30 @@
+{
+  "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+  "release": "5.0.260",
+  "proteins": 8510,
+  "interactions": 34540,
+  "components": 1,
+  "bridges": 2848,
+  "articulationPoints": 32,
+  "threshold": 0.2,
+  "thresholdProteins": 3864,
+  "thresholdInteractions": 11320,
+  "cliques": 19136,
+  "largestClique": 9,
+  "largestCliqueMembers": [
+    "GNB2L1",
+    "N",
+    "ORF6",
+    "nsp1",
+    "nsp10",
+    "nsp12",
+    "nsp14",
+    "nsp3",
+    "nsp5"
+  ],
+  "singlePublication": 24344,
+  "pairsWithSupport": 34540,
+  "corrStrict": 0.5123011138323115,
+  "corrEvidence": 0.3019824606281415,
+  "corrLiterature": 0.32474183161239256
+}

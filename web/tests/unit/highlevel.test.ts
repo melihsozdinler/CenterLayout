@@ -7,7 +7,7 @@ import {
   foldSmallModules,
   DRAW_PROTEINS_BELOW,
 } from '@/algo/contract'
-import { highLevelLayout } from '@/views/highlevel-layout'
+import { highLevelLayout, moduleRadius } from '@/views/highlevel-layout'
 import { highLevelNodeAt, highLevelScene } from '@/views/render/network-scene'
 import type { ScoredPair } from '@/trust/score'
 
@@ -172,6 +172,27 @@ describe('autoContract', () => {
     expect(high.nodes.length).toBeGreaterThan(1)
   })
 
+  it('falls back to communities when the second module is not worth drawing', () => {
+    // A core with a fringe of two-protein bridges hanging off it. Biconnected
+    // components do split this — but into one huge module and a cloud of specks, which
+    // is a true statement about the network and a useless level to read it at.
+    const edges: string[] = []
+    for (let i = 0; i < 12; i += 1) {
+      for (let j = i + 1; j < 12; j += 1) edges.push(`c${i}-c${j}`)
+    }
+    for (let i = 0; i < 20; i += 1) edges.push(`c${i % 12}-leaf${i}`)
+
+    const graph = graphOf(edges)
+    const structural = contract(graph, {
+      strategy: 'biconnected-components',
+      minGroupSize: 2,
+    })
+    expect(structural.nodes.length).toBeGreaterThan(2)
+    expect([...structural.nodes].sort((a, b) => b.size - a.size)[1]!.size).toBe(2)
+
+    expect(autoContract(graph).strategy).toBe('communities')
+  })
+
   it('falls back to communities when the graph is biconnected', () => {
     // Nothing to peel: the structural decomposition would return the whole graph, so a
     // drill-down using it would never get anywhere.
@@ -222,6 +243,16 @@ describe('autoContract', () => {
     expect(high.ungrouped).toHaveLength(0)
   })
 
+  it('reports a single module for a star, which has none to find', () => {
+    // A hub and its partners. Every division of a star scores worse than leaving it
+    // whole, so modularity returns one community — and a caller that assumed
+    // contraction always divides would redraw the same picture forever.
+    const edges = Array.from({ length: 40 }, (_, i) => `hub-p${i}`)
+    const high = autoContract(graphOf(edges))
+    expect(high.nodes).toHaveLength(1)
+    expect(high.nodes[0]!.size).toBe(41)
+  })
+
   it('folds the long tail so the high-level graph stays readable', () => {
     // Twenty triangles joined in a chain: without folding, twenty nodes.
     const edges: string[] = []
@@ -242,6 +273,25 @@ describe('autoContract', () => {
 })
 
 describe('foldSmallModules', () => {
+  it('folds at a size boundary rather than keeping an arbitrary few', () => {
+    // Thirty modules of two proteins and one of six. Keeping "the largest nine" would
+    // keep eight two-protein modules chosen by nothing but sort order.
+    const edges: string[] = ['h0-h1', 'h1-h2', 'h2-h0', 'h0-h3', 'h3-h4', 'h4-h0']
+    for (let i = 0; i < 30; i += 1) edges.push(`h0-t${i}`, `t${i}-u${i}`)
+
+    const high = autoContract(graphOf(edges), { maxModules: 10 })
+    const folded = high.nodes.find((n) => n.id === 'gsmall')!
+    const kept = high.nodes.filter((n) => n.id !== 'gsmall')
+
+    // Every kept module is strictly larger than everything folded away.
+    const smallestKept = Math.min(...kept.map((n) => n.size))
+    const largestFolded = Math.max(
+      ...high.nodes.filter((n) => n.id === 'gsmall').map(() => 2),
+    )
+    expect(smallestKept).toBeGreaterThan(largestFolded - 1)
+    expect(folded.size).toBeGreaterThan(2)
+  })
+
   const wide = () => {
     const edges: string[] = []
     for (let i = 0; i < 10; i += 1) {
@@ -292,6 +342,23 @@ describe('highLevelLayout', () => {
     }
   })
 
+  it('fills the frame, whatever size the force layout settled at', () => {
+    // A dozen densely linked modules settle small, and a picture drawn a tenth the
+    // size of its canvas puts every label on top of its neighbour.
+    const edges: string[] = []
+    for (let group = 0; group < 12; group += 1) {
+      for (let i = 0; i < 4; i += 1) {
+        for (let j = i + 1; j < 4; j += 1) edges.push(`${group}x${i}-${group}x${j}`)
+      }
+      if (group > 0) edges.push(`0x0-${group}x0`, `${group - 1}x1-${group}x1`)
+    }
+    const layout = highLevelLayout(autoContract(graphOf(edges)), { radius: 400 })
+    const reach = Math.max(...layout.nodes.map((n) => Math.hypot(n.x, n.y)))
+    // Neither a postage stamp in the middle of the canvas nor a sprawl beyond it.
+    expect(reach).toBeGreaterThan(200)
+    expect(reach).toBeLessThan(1200)
+  })
+
   it('is deterministic', () => {
     const graph = barbell(6)
     expect(layoutOf(graph)).toEqual(layoutOf(graph))
@@ -322,6 +389,32 @@ describe('highLevelLayout', () => {
     expect(link.edgeCount).toBe(2)
     expect(link.trustMass).toBeCloseTo(0.6, 9)
     expect(link.trust).toBeCloseTo(0.3, 9)
+  })
+
+  it('does not let modules overlap', () => {
+    // Modules are discs of very different sizes; a force layout placing them as points
+    // buries the small ones inside the large.
+    const edges: string[] = []
+    for (let group = 0; group < 8; group += 1) {
+      const size = group === 0 ? 12 : 3
+      for (let i = 0; i < size; i += 1) {
+        for (let j = i + 1; j < size; j += 1) edges.push(`${group}x${i}-${group}x${j}`)
+      }
+      if (group > 0) edges.push(`0x0-${group}x0`)
+    }
+    const layout = highLevelLayout(autoContract(graphOf(edges)))
+    const maxSize = Math.max(...layout.nodes.map((n) => n.size))
+
+    for (const a of layout.nodes) {
+      for (const b of layout.nodes) {
+        if (a.index >= b.index) continue
+        const gap =
+          Math.hypot(a.x - b.x, a.y - b.y) -
+          moduleRadius(a.size, maxSize) -
+          moduleRadius(b.size, maxSize)
+        expect(gap).toBeGreaterThan(-0.01)
+      }
+    }
   })
 
   it('draws and hit-tests the modules it placed', () => {

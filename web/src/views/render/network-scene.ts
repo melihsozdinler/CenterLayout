@@ -6,7 +6,7 @@
  */
 
 import type { NetworkLayoutResult, NetworkNode } from '../network-layout'
-import type { HighLevelLayoutNode, HighLevelLayoutResult } from '../highlevel-layout'
+import { moduleRadius, type HighLevelLayoutNode, type HighLevelLayoutResult } from '../highlevel-layout'
 import type { MatrixView } from '../matrix'
 import { PROLIVIS_STYLE, type Scene, type SceneItem, type SceneStyle } from './scene'
 
@@ -177,12 +177,6 @@ export interface HighLevelSceneOptions {
   readonly padding?: number
 }
 
-/** Radius of a module node, shared by the scene and by hit-testing. */
-function moduleRadius(size: number, maxSize: number): number {
-  // Area with membership, floored at something a label fits inside.
-  return 14 + 30 * Math.sqrt(size / Math.max(1, maxSize))
-}
-
 /**
  * The high-level graph: modules as nodes, evidence as links.
  *
@@ -283,8 +277,30 @@ export function highLevelScene(
     })
   }
 
-  const reach = layout.extent + padding
-  return { bounds: [-reach, -reach, reach, reach], items, background: style.background }
+  // The true bounding box, including the label under each module. A symmetric box
+  // around the furthest node wastes most of the canvas whenever the arrangement is not
+  // centred on the origin — which, after separation, it never quite is.
+  let minX = 0
+  let minY = 0
+  let maxX = 0
+  let maxY = 0
+  for (const node of nodes) {
+    const radius = moduleRadius(node.size, maxSize)
+    // Labels are centred under the module and are far wider than it. Measuring text
+    // needs a canvas the scene does not have, so this estimates from the character
+    // count — an overestimate costs white space, an underestimate clips a label.
+    const halfLabel = (node.label.length * 11 * 0.6) / 2
+    minX = Math.min(minX, node.x - radius, node.x - halfLabel)
+    maxX = Math.max(maxX, node.x + radius, node.x + halfLabel)
+    minY = Math.min(minY, node.y - radius)
+    maxY = Math.max(maxY, node.y + radius + 18)
+  }
+
+  return {
+    bounds: [minX - padding, minY - padding, maxX + padding, maxY + padding],
+    items,
+    background: style.background,
+  }
 }
 
 /** The module under a world-space point, if any. */

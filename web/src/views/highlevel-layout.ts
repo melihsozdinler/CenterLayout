@@ -65,6 +65,66 @@ export interface HighLevelLayoutOptions {
   readonly seed?: number
 }
 
+/**
+ * Radius of a module in the drawing, by membership.
+ *
+ * Defined here rather than in the renderer because the layout has to know it: modules
+ * are large discs with labels under them, and a placement that treats them as points
+ * produces overlapping circles and unreadable text. The renderer and the hit-testing
+ * use this same function, so what is drawn, what is clicked and what was placed agree.
+ */
+export function moduleRadius(size: number, maxSize: number): number {
+  // Area with membership, floored at something a label fits inside.
+  return 14 + 30 * Math.sqrt(size / Math.max(1, maxSize))
+}
+
+/**
+ * Push overlapping modules apart.
+ *
+ * A force layout balances repulsion against attraction between *points*. Modules are
+ * discs of very different sizes, so the result routinely buries a small module inside a
+ * large one. This is a few hundred passes of the standard circle-separation relaxation,
+ * which is cheap at sixty nodes and leaves the arrangement otherwise intact.
+ *
+ * The gap allows for the label under each module.
+ */
+function separate(
+  points: { x: number; y: number; r: number }[],
+  gap: number,
+  iterations = 400,
+): void {
+  for (let pass = 0; pass < iterations; pass += 1) {
+    let moved = false
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        const a = points[i]!
+        const b = points[j]!
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let distance = Math.hypot(dx, dy)
+        const minimum = a.r + b.r + gap
+        if (distance >= minimum) continue
+
+        if (distance < 1e-6) {
+          // Coincident, and the nudge has to be deterministic.
+          dx = ((i % 7) - 3) * 0.1 + 0.01
+          dy = ((j % 5) - 2) * 0.1 + 0.01
+          distance = Math.hypot(dx, dy)
+        }
+        const push = (minimum - distance) / 2
+        const ux = dx / distance
+        const uy = dy / distance
+        a.x -= ux * push
+        a.y -= uy * push
+        b.x += ux * push
+        b.y += uy * push
+        moved = true
+      }
+    }
+    if (!moved) break
+  }
+}
+
 export function highLevelLayout(
   high: HighLevelGraph,
   options: HighLevelLayoutOptions = {},
@@ -113,6 +173,7 @@ export function highLevelLayout(
     symbolHi: high.nodes[Math.max(edge.source, edge.target)]?.label ?? '',
   }))
 
+  const maxSize = Math.max(1, ...high.nodes.map((node) => node.size))
   const placed = new Map<number, { x: number; y: number }>()
   if (pairs.length > 0) {
     const graph = PpiGraph.fromPairs(pairs)
@@ -121,7 +182,30 @@ export function highLevelLayout(
       radius,
       ...(options.seed === undefined ? {} : { seed: options.seed }),
     })
-    for (const node of layout.nodes) placed.set(node.id, { x: node.x, y: node.y })
+
+    // Scale the result to fill the frame. A force layout balances repulsion against
+    // attraction at whatever size the two agree on, and a dozen densely linked modules
+    // agree on a small one — which draws a postage stamp in the middle of the canvas
+    // with every label on top of its neighbour. Scaling is uniform, so it changes how
+    // large the picture is and nothing about its shape.
+    //
+    // The median distance is the reference, not the maximum: one weakly linked module
+    // sitting far out would otherwise set the scale for everyone and squash the rest
+    // into the middle.
+    const distances = layout.nodes
+      .map((n) => Math.hypot(n.x, n.y))
+      .sort((a, b) => a - b)
+    const median = distances[Math.floor(distances.length / 2)] ?? 0
+    const scale = median > 0 ? (radius * 0.55) / median : 1
+
+    const points = layout.nodes.map((node) => ({
+      id: node.id,
+      x: node.x * scale,
+      y: node.y * scale,
+      r: moduleRadius(high.nodes[node.id]?.size ?? 1, maxSize),
+    }))
+    separate(points, 18)
+    for (const point of points) placed.set(point.id, { x: point.x, y: point.y })
   }
 
   // Anything the force layout never saw — a module linked to nothing — goes on a ring

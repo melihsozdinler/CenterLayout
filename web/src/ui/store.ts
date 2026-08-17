@@ -96,6 +96,8 @@ export interface AppState {
   network: NetworkLayoutResult | null
   /** The contracted network, when the modules are being drawn instead of proteins. */
   highLevel: HighLevelLayoutResult | null
+  /** Why the modules view is showing proteins instead, when it is. */
+  moduleNote: string | null
   /** Modules opened so far, outermost first. Empty means the whole network. */
   drill: DrillLevel[]
   matrix: MatrixView | null
@@ -204,6 +206,7 @@ export const useApp = create<AppState>((set, get) => ({
 
   network: null,
   highLevel: null,
+  moduleNote: null,
   drill: [],
   matrix: null,
   networkSettings: {
@@ -728,21 +731,32 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
     // Contract while the level is too big to read as proteins. Opening a module that
     // is still large contracts *it*, which is the recursion: the same view at a
     // smaller scope, until there is something a reader can actually look at.
+    let moduleNote: string | null = null
     if (modules && base.order > DRAW_PROTEINS_BELOW) {
       const high = api.autoContract(base)
-      const highLevel = api.highLevelLayout(high)
-      set({
-        highLevel,
-        network: null,
-        matrix: null,
-        networkStats: {
-          nodes: base.order,
-          edges: base.size,
-          hidden: unfiltered ? 0 : scored.length - kept.length,
-        },
-        error: null,
-      })
-      return
+
+      // A hub and its partners has no modules to find: every division of a star scores
+      // worse than leaving it whole, so the contraction returns one module. Drawing it
+      // would put a single circle on the canvas and, worse, opening that circle would
+      // show the same picture again. Draw the proteins instead and say why.
+      if (high.nodes.length > 1) {
+        set({
+          highLevel: api.highLevelLayout(high),
+          network: null,
+          matrix: null,
+          moduleNote: null,
+          networkStats: {
+            nodes: base.order,
+            edges: base.size,
+            hidden: unfiltered ? 0 : scored.length - kept.length,
+          },
+          error: null,
+        })
+        return
+      }
+      moduleNote = `No modules here: these ${base.order.toLocaleString()} proteins do not divide.`
+    } else if (modules) {
+      moduleNote = 'Small enough to draw as proteins.'
     }
 
     // Density limits are applied *within* the neighbourhood — capping globally first
@@ -768,6 +782,7 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
     set({
       network,
       highLevel: null,
+      moduleNote,
       matrix: null,
       networkStats: {
         nodes: network.nodes.length,
