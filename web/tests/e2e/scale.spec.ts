@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 /**
  * Scalability against a real BioGRID release.
@@ -162,4 +162,109 @@ test('ingests a full BioGRID release and stays usable', async ({ page }) => {
   expect(measured.timings['organisms']).toBeLessThan(30_000)
   expect(measured.timings['systems']).toBeLessThan(30_000)
   expect(HUMAN).toBe(9606)
+
+  await readOneLevelUp(page, dataset.datasetId)
 })
+
+/**
+ * The high-level view at organism scale — the case it exists for.
+ *
+ * Runs on the dataset the previous test ingested, so it is part of the same serial run.
+ * A contraction that is only ever exercised on a fixture of 975 records proves nothing
+ * about the hairball it claims to solve.
+ */
+async function readOneLevelUp(page: Page, datasetId: string) {
+  const measured = await page.evaluate(async (id) => {
+    const time = async <T>(fn: () => Promise<T> | T): Promise<[T, number]> => {
+      const t0 = performance.now()
+      const value = await fn()
+      return [value, Math.round(performance.now() - t0)]
+    }
+
+    const [scored, scoreMs] = await time(() =>
+      window.prolivis!.score({
+        datasetId: id,
+        organismId: 9606,
+        physicalOnly: true,
+        excludeSelfInteractions: true,
+      }),
+    )
+    // The honest worst case: everything reported, no trust threshold hiding the tail.
+    const [graph, graphMs] = await time(() => window.prolivis!.graphFrom(scored))
+
+    const levels: {
+      order: number
+      size: number
+      modules: number
+      largest: number
+      strategy: string
+      contractMs: number
+      layoutMs: number
+    }[] = []
+
+    let current = graph
+    for (let depth = 0; depth < 6 && current.order > 240; depth += 1) {
+      const [high, contractMs] = await time(() => window.prolivis!.autoContract(current))
+      const [, layoutMs] = await time(() => window.prolivis!.highLevelLayout(high))
+      const biggest = [...high.nodes].sort((a, b) => b.size - a.size)[0]!
+      levels.push({
+        order: current.order,
+        size: current.size,
+        modules: high.nodes.length,
+        largest: biggest.size,
+        strategy: high.strategy,
+        contractMs,
+        layoutMs,
+      })
+
+      const keep = new Set<number>()
+      for (const member of biggest.members) {
+        const index = current.index(member)
+        if (index !== undefined) keep.add(index)
+      }
+      if (keep.size === 0 || keep.size === current.order) break
+      current = current.induced(keep)
+    }
+
+    return {
+      scoreMs,
+      graphMs,
+      interactions: scored.length,
+      order: graph.order,
+      size: graph.size,
+      levels,
+      leaf: current.order,
+    }
+  }, datasetId)
+
+  console.log(
+    `\n  human interactome: ${measured.order.toLocaleString()} proteins, ` +
+      `${measured.size.toLocaleString()} interactions ` +
+      `(scored in ${(measured.scoreMs / 1000).toFixed(1)}s, graph in ${(measured.graphMs / 1000).toFixed(1)}s)`,
+  )
+  for (const [depth, level] of measured.levels.entries()) {
+    console.log(
+      `  level ${depth}: ${level.order.toLocaleString()} proteins → ` +
+        `${level.modules} ${level.strategy === 'communities' ? 'communities' : 'modules'}, ` +
+        `largest ${level.largest.toLocaleString()} ` +
+        `(contract ${(level.contractMs / 1000).toFixed(1)}s, layout ${(level.layoutMs / 1000).toFixed(1)}s)`,
+    )
+  }
+  console.log(`  reached ${measured.leaf.toLocaleString()} proteins — drawable as proteins\n`)
+
+  // The whole claim, stated as assertions.
+  expect(measured.levels.length).toBeGreaterThan(1)
+  for (const level of measured.levels) {
+    // Readable: a hairball of modules would be no better than a hairball of proteins.
+    expect(level.modules).toBeLessThanOrEqual(60)
+    expect(level.modules).toBeGreaterThan(1)
+    // Progress: each level is strictly smaller, which is what makes the descent end.
+    expect(level.largest).toBeLessThan(level.order)
+    // Interactive: contracting a hundred thousand interactions has to feel like a click.
+    expect(level.contractMs).toBeLessThan(30_000)
+  }
+  for (let i = 1; i < measured.levels.length; i += 1) {
+    expect(measured.levels[i]!.order).toBeLessThan(measured.levels[i - 1]!.order)
+  }
+  expect(measured.leaf).toBeLessThanOrEqual(240)
+}

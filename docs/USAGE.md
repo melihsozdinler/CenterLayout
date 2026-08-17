@@ -76,6 +76,34 @@ you do while reading a network:
 | **Grouped** | What are the modules? |
 | **Circular** | A stable reference arrangement. |
 
+### Reading a network too big to draw
+
+Above a few thousand proteins no layout helps: a PPI network is one giant connected
+component, so grouping by component puts everything in one group, and a force layout
+draws a blob. **Modules**, next to the layout buttons, reads the network one level up
+instead — a node is a set of proteins, and a link is the evidence spanning two sets.
+
+| Channel | Meaning |
+| --- | --- |
+| Node area | Proteins in the module |
+| Number inside | The same count, so you need not judge it by eye |
+| Node ring | How well the module's own interior is supported |
+| Link width | Interactions spanning the two modules |
+| Link colour, label | Their mean trust, and how many there are |
+
+**Click a module to open it.** If what is inside is still too large to draw, it is
+contracted again, and the breadcrumb above the canvas grows a level. Any level in the
+trail takes you back to it. On the full human interactome, four clicks take you from a
+million interactions to 240 proteins.
+
+Modules are biconnected components where those decompose the network — a module is then
+a set of proteins that stays connected when any one of them is removed — and
+trust-weighted communities where they do not, which is what happens in a well-studied
+core. Which one you are looking at is not hidden: the modules are labelled `Module n`
+or `Community n` accordingly. Every protein is in exactly one module, and the smallest
+modules are folded into one node rather than dropped, so nothing leaves the picture as
+you descend. [`ALGORITHMS.md`](ALGORITHMS.md) has the reasoning.
+
 Density has three separate controls because they fail differently: **minimum partners**
 drops the periphery (usually the effective one, since a PPI network is mostly degree-1
 leaves), **interactions drawn** keeps the best-supported but can leave a protein looking
@@ -120,6 +148,8 @@ prolivis.cliques(graph, { minSize: 3 })   // candidate complexes
 prolivis.modules(graph)                   // articulation points and bridges
 prolivis.cores(graph)                     // the dense part
 prolivis.contract(graph, { strategy: 'cliques' })
+prolivis.communities(graph)               // Louvain, weighted by trust
+prolivis.autoContract(graph)              // what the Modules view draws
 ```
 
 **Cliques** are sets of proteins every one of which is reported to interact with every

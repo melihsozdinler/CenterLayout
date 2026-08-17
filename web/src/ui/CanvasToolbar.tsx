@@ -18,6 +18,11 @@ const LAYOUTS: { mode: NetworkLayoutMode; label: string; answers: string }[] = [
 export function CanvasToolbar() {
   const view = useApp((s) => s.view)
   const mode = useApp((s) => s.networkSettings.mode)
+  const grouping = useApp((s) => s.networkSettings.grouping)
+  const setGrouping = useApp((s) => s.setGrouping)
+  const drill = useApp((s) => s.drill)
+  const drillTo = useApp((s) => s.drillTo)
+  const highLevel = useApp((s) => s.highLevel)
   const updateNetwork = useApp((s) => s.updateNetwork)
   const network = useApp((s) => s.network)
   const focus = useApp((s) => s.focus)
@@ -30,6 +35,8 @@ export function CanvasToolbar() {
   const setScope = useApp((s) => s.setScope)
 
   if (view !== 'network') return null
+
+  const modules = grouping === 'modules'
 
   // While focused the arrangement is the ego layout, which is the point of focusing;
   // the layout buttons apply to the whole network and would silently do nothing.
@@ -69,23 +76,79 @@ export function CanvasToolbar() {
         </div>
       )}
 
+      {/*
+        The level trail. Opening a module that is itself too large contracts it again,
+        so this can be several deep — and a reader who cannot see how far in they are,
+        or get back out, is lost rather than exploring.
+      */}
+      {modules && !focused && (
+        <div className="crumbs drill">
+          <button
+            onClick={() => void drillTo(0)}
+            disabled={drill.length === 0}
+            title="Back to the whole network"
+          >
+            ← Whole network
+          </button>
+          {drill.map((level, depth) => (
+            <span key={`${depth}-${level.id}`} className="crumb">
+              <span className="crumb-sep">›</span>
+              {depth === drill.length - 1 ? (
+                <span className="crumb-current">
+                  {level.label} ({level.size.toLocaleString()})
+                </span>
+              ) : (
+                <button className="link" onClick={() => void drillTo(depth + 1)}>
+                  {level.label}
+                </button>
+              )}
+            </span>
+          ))}
+          {highLevel && (
+            <span className="hint">
+              {highLevel.nodes.length} modules · {highLevel.proteinCount.toLocaleString()}{' '}
+              proteins · click one to open it
+            </span>
+          )}
+          {!highLevel && drill.length > 0 && (
+            <span className="hint">small enough to draw as proteins</span>
+          )}
+        </div>
+      )}
+
       {!focused && (
         <div className="layout-picker" role="group" aria-label="Layout">
           {LAYOUTS.map((layout) => (
             <button
               key={layout.mode}
-              className={mode === layout.mode ? 'active' : ''}
-              aria-pressed={mode === layout.mode}
+              className={!modules && mode === layout.mode ? 'active' : ''}
+              aria-pressed={!modules && mode === layout.mode}
               title={layout.answers}
-              onClick={() => void updateNetwork({ mode: layout.mode })}
+              // One update, not two: switching back to proteins and choosing the
+              // arrangement in separate actions would start two rebuilds racing, and
+              // whichever finished last would win.
+              onClick={() =>
+                void updateNetwork({
+                  mode: layout.mode,
+                  ...(modules ? { grouping: 'proteins' as const } : {}),
+                })
+              }
             >
               {layout.label}
             </button>
           ))}
+          <button
+            className={modules ? 'active' : ''}
+            aria-pressed={modules}
+            title="Draw the modules instead of the proteins, and open any of them."
+            onClick={() => void setGrouping(modules ? 'proteins' : 'modules')}
+          >
+            Modules
+          </button>
         </div>
       )}
 
-      {!focused && network && network.mode !== mode && (
+      {!focused && !modules && network && network.mode !== mode && (
         <span className="toolbar-note">
           Showing {network.mode}: {mode} is not usable at{' '}
           {network.nodes.length.toLocaleString()} proteins.

@@ -11,6 +11,8 @@ import { api } from '../api'
 import type { DatasetSummary, OrganismSummary } from '../model/datasets'
 import type { CenterLayoutResult } from '../views/center-layout'
 import type { NetworkLayoutResult, NetworkLayoutMode } from '../views/network-layout'
+import type { HighLevelLayoutResult } from '../views/highlevel-layout'
+import { DRAW_PROTEINS_BELOW } from '../algo/contract'
 import type { MatrixView, MatrixOrdering } from '../views/matrix'
 import type { NetworkColouring } from '../views/render/network-scene'
 import type { ComparisonResult } from '../compare/compare'
@@ -36,6 +38,22 @@ export interface Scope {
   readonly label: string
 }
 
+/**
+ * One step of the drill-down through the high-level graph.
+ *
+ * A large network is read by opening a module, and the module you opened may itself be
+ * too large to draw — so the trail can be several deep, and every step has to be
+ * retraceable. Members are BioGRID gene ids rather than indices: the graph is rebuilt
+ * whenever the trust threshold moves, and an index into the old graph would then point
+ * at a different protein.
+ */
+export interface DrillLevel {
+  readonly id: string
+  readonly label: string
+  readonly members: readonly number[]
+  readonly size: number
+}
+
 export interface NetworkSettings {
   /** Hide interactions scoring below this. Most reported interactions are weak. */
   readonly minTrust: number
@@ -49,6 +67,12 @@ export interface NetworkSettings {
   readonly maxEdges: number
   /** Hops shown around a focused protein. */
   readonly focusDepth: number
+  /**
+   * Draw proteins, or draw the modules they form. At organism scale the protein-level
+   * picture is a hairball whatever the layout; the module-level one is readable, and
+   * any module can be opened.
+   */
+  readonly grouping: 'proteins' | 'modules'
 }
 
 export interface LayoutSettings {
@@ -58,7 +82,7 @@ export interface LayoutSettings {
   readonly showPublicationLabels: boolean
 }
 
-interface AppState {
+export interface AppState {
   datasets: DatasetSummary[]
   activeDatasetId: string | null
   organisms: OrganismSummary[]
@@ -70,6 +94,10 @@ interface AppState {
   selectedNodeId: string | null
 
   network: NetworkLayoutResult | null
+  /** The contracted network, when the modules are being drawn instead of proteins. */
+  highLevel: HighLevelLayoutResult | null
+  /** Modules opened so far, outermost first. Empty means the whole network. */
+  drill: DrillLevel[]
   matrix: MatrixView | null
   networkSettings: NetworkSettings
   networkStats: { nodes: number; edges: number; hidden: number } | null
@@ -125,6 +153,12 @@ interface AppState {
   setView: (view: ViewKind) => Promise<void>
   updateNetwork: (settings: Partial<NetworkSettings>) => Promise<void>
   selectNetworkNode: (index: number | null) => void
+  /** Switch between drawing proteins and drawing the modules they form. */
+  setGrouping: (grouping: NetworkSettings['grouping']) => Promise<void>
+  /** Open a module: draw what is inside it, contracting again if it is still large. */
+  drillInto: (moduleId: string) => Promise<void>
+  /** Return to a level of the drill-down; 0 is the whole network. */
+  drillTo: (depth: number) => Promise<void>
   compareTo: (datasetId: string | null) => Promise<void>
   mergeWith: (datasetId: string) => Promise<void>
   /**
@@ -169,6 +203,8 @@ export const useApp = create<AppState>((set, get) => ({
   selectedNodeId: null,
 
   network: null,
+  highLevel: null,
+  drill: [],
   matrix: null,
   networkSettings: {
     // Not zero by default: at zero the view is dominated by single-publication
@@ -181,6 +217,7 @@ export const useApp = create<AppState>((set, get) => ({
     minDegree: 1,
     maxEdges: 4000,
     focusDepth: 1,
+    grouping: 'proteins',
   },
   networkStats: null,
   selectedNodeIndex: null,
@@ -302,12 +339,47 @@ export const useApp = create<AppState>((set, get) => ({
     set({
       networkSettings: { ...get().networkSettings, ...settings },
       selectedNodeIndex: null,
+      // Changing what a node means invalidates where you are inside the old one.
+      ...(settings.grouping === undefined ? {} : { drill: [] }),
     })
     await rebuildLayout(set, get)
   },
 
   selectNetworkNode: (index) =>
     set({ selectedNodeIndex: get().selectedNodeIndex === index ? null : index }),
+
+  async setGrouping(grouping) {
+    // Reading the modules is a question about the whole network, so a focused protein
+    // is left behind rather than silently narrowing what gets contracted.
+    set({
+      view: 'network',
+      ...(grouping === 'modules' ? { focusId: null, focus: null, focusHistory: [] } : {}),
+    })
+    await get().updateNetwork({ grouping })
+  },
+
+  async drillInto(moduleId) {
+    const module = get().highLevel?.nodes.find((n) => n.id === moduleId)
+    if (!module) return
+    set({
+      drill: [
+        ...get().drill,
+        {
+          id: module.id,
+          label: module.label,
+          members: module.members,
+          size: module.size,
+        },
+      ],
+      selectedNodeIndex: null,
+    })
+    await rebuildLayout(set, get)
+  },
+
+  async drillTo(depth) {
+    set({ drill: get().drill.slice(0, Math.max(0, depth)), selectedNodeIndex: null })
+    await rebuildLayout(set, get)
+  },
 
   async setScope(scope) {
     const dataset = get().activeDatasetId
@@ -430,6 +502,7 @@ export const useApp = create<AppState>((set, get) => ({
         focus,
         focusId: biogridId,
         view: 'network',
+        highLevel: null,
         openResource: null,
         focusHistory:
           current === null || current === biogridId
@@ -570,7 +643,7 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
   const { activeDatasetId, activeOrganismId, layoutSettings, view, networkSettings } =
     get()
   if (activeDatasetId === null) {
-    set({ layout: null, network: null, matrix: null, networkStats: null })
+    set({ layout: null, network: null, highLevel: null, matrix: null, networkStats: null })
     return
   }
 
@@ -607,6 +680,7 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
       set({
         matrix,
         network: null,
+        highLevel: null,
         networkStats: {
           nodes: matrix.labels.length,
           edges: matrix.cells.length,
@@ -617,7 +691,7 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
       return
     }
 
-    const { focusId } = get()
+    const { focusId, drill } = get()
 
     // Neither a focused protein nor a scoped publication applies the trust threshold:
     // both are requests to see a specific, bounded set of interactions in full, and
@@ -630,17 +704,58 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
     // the full BioGRID release that saved eleven seconds on every rebuild.
     const full = api.graphFrom(unfiltered ? scored : kept)
 
+    // Walk the drill-down: each opened module restricts the graph to its proteins.
+    // Members are gene ids, so a level that no longer exists — the trust threshold
+    // moved, and its proteins went with it — simply ends the trail rather than
+    // silently showing a different module's contents.
+    const modules = networkSettings.grouping === 'modules' && focusId === null
+    let base = full
+    if (modules && drill.length > 0) {
+      const walked: DrillLevel[] = []
+      for (const level of drill) {
+        const keep = new Set<number>()
+        for (const id of level.members) {
+          const index = base.index(id)
+          if (index !== undefined) keep.add(index)
+        }
+        if (keep.size === 0) break
+        base = base.induced(keep)
+        walked.push(level)
+      }
+      if (walked.length !== drill.length) set({ drill: walked })
+    }
+
+    // Contract while the level is too big to read as proteins. Opening a module that
+    // is still large contracts *it*, which is the recursion: the same view at a
+    // smaller scope, until there is something a reader can actually look at.
+    if (modules && base.order > DRAW_PROTEINS_BELOW) {
+      const high = api.autoContract(base)
+      const highLevel = api.highLevelLayout(high)
+      set({
+        highLevel,
+        network: null,
+        matrix: null,
+        networkStats: {
+          nodes: base.order,
+          edges: base.size,
+          hidden: unfiltered ? 0 : scored.length - kept.length,
+        },
+        error: null,
+      })
+      return
+    }
+
     // Density limits are applied *within* the neighbourhood — capping globally first
     // would often remove the focus itself.
-    const focusIndex = focusId === null ? undefined : full.index(focusId)
+    const focusIndex = focusId === null ? undefined : base.index(focusId)
     const scoped =
       focusIndex === undefined
-        ? full
-        : full.induced(full.neighbourhood(focusIndex, networkSettings.focusDepth))
+        ? base
+        : base.induced(base.neighbourhood(focusIndex, networkSettings.focusDepth))
 
     const graph = scoped.reduce({
       maxEdges: networkSettings.maxEdges,
-      ...(focusIndex === undefined && scope === null
+      ...(focusIndex === undefined && scope === null && !modules
         ? { minDegree: networkSettings.minDegree }
         : {}),
     })
@@ -652,6 +767,7 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
     })
     set({
       network,
+      highLevel: null,
       matrix: null,
       networkStats: {
         nodes: network.nodes.length,
@@ -662,7 +778,7 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
       error: null,
     })
   } catch (e) {
-    set({ error: message(e), layout: null, network: null, matrix: null })
+    set({ error: message(e), layout: null, network: null, highLevel: null, matrix: null })
   } finally {
     set({ busy: null })
   }

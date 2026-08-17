@@ -831,3 +831,40 @@ button.link.clear {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.crumbs.drill {
+  flex-wrap: wrap;
+}
+
+.crumbs .crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crumb-sep {
+  color: var(--fg-muted);
+}
+
+button.link {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.tooltip-members {
+  margin-top: 4px;
+  max-width: 260px;
+  color: var(--fg-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.canvas-notice button.primary {
+  margin-top: 8px;
+  align-self: flex-start;
+}

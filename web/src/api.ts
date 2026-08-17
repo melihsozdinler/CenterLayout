@@ -26,6 +26,9 @@ import {
   type OrganismSummary,
 } from './model/datasets'
 import type { ZipEntry } from './data/zip'
+// Type-only: the store imports this module at runtime, and a value import here would
+// close the loop.
+import type { AppState } from './ui/store'
 import { isKnownExperimentalSystem } from './data/vocabulary'
 import {
   enrichLiterature,
@@ -126,10 +129,18 @@ import {
   type RemovalResult,
 } from './algo/removal'
 import {
+  autoContract,
   contract,
+  type AutoContractOptions,
   type ContractOptions,
   type HighLevelGraph,
 } from './algo/contract'
+import { louvain, type CommunityOptions, type CommunityResult } from './algo/community'
+import {
+  highLevelLayout,
+  type HighLevelLayoutOptions,
+  type HighLevelLayoutResult,
+} from './views/highlevel-layout'
 import {
   centerLayout,
   type CenterLayoutOptions,
@@ -142,8 +153,10 @@ import {
   type NetworkLayoutResult,
 } from './views/network-layout'
 import {
+  highLevelScene,
   matrixScene,
   networkScene,
+  type HighLevelSceneOptions,
   type MatrixSceneOptions,
   type NetworkSceneOptions,
 } from './views/render/network-scene'
@@ -192,6 +205,11 @@ import {
 
 export interface ProLiVisApi {
   readonly version: string
+  /**
+   * The running interface's state and actions, when there is one. Absent in a headless
+   * script that only uses the analysis API.
+   */
+  ui?: UiHandle
   /** The DuckDB engine, created on first use. */
   engine(): Promise<DuckDBEngine>
   /** List the members of a dropped zip without inflating them. */
@@ -414,6 +432,25 @@ export interface ProLiVisApi {
   ): RemovalResult
   /** Contract the network to its modules, carrying trust mass on the links between. */
   contract(graph: PpiGraph, options?: ContractOptions): HighLevelGraph
+  /**
+   * Contract by whichever grouping actually divides this graph: biconnected components
+   * where they decompose it, modularity communities where they do not. Unlike
+   * `contract`, this can be applied to its own output — which is what a drill-down
+   * through a large network needs.
+   */
+  autoContract(graph: PpiGraph, options?: AutoContractOptions): HighLevelGraph
+  /**
+   * Communities by modularity optimization (Louvain), deterministic. Weighted by
+   * trust, so a community is held together by evidence rather than by edge count.
+   */
+  communities(graph: PpiGraph, options?: CommunityOptions): CommunityResult
+  /** Place a contracted graph for drawing: modules as nodes, evidence as links. */
+  highLevelLayout(
+    high: HighLevelGraph,
+    options?: HighLevelLayoutOptions,
+  ): HighLevelLayoutResult
+  /** The high-level graph as a scene, for canvas or SVG. */
+  highLevelScene(layout: HighLevelLayoutResult, options?: HighLevelSceneOptions): Scene
 
   // --- comparison and merging -----------------------------------------------
   /**
@@ -676,6 +713,14 @@ export const api: ProLiVisApi = {
 
   contract: (graph, options) => contract(graph, options ?? {}),
 
+  autoContract: (graph, options) => autoContract(graph, options ?? {}),
+
+  communities: (graph, options) => louvain(graph, options ?? {}),
+
+  highLevelLayout: (high, options) => highLevelLayout(high, options ?? {}),
+
+  highLevelScene: (layout, options) => highLevelScene(layout, options ?? {}),
+
   async compare(query) {
     return compareDatasets(await getEngine(), query)
   },
@@ -719,10 +764,31 @@ export const api: ProLiVisApi = {
   checkManifest: (manifest, available) => checkReproducibility(manifest, available),
 }
 
+/**
+ * A handle on the interface's own state — which dataset, which view, which module you
+ * have opened — and on the actions behind the buttons.
+ *
+ * The analysis API above is the interesting half; this is the other one. A figure in
+ * the paper is produced by driving the interface, not by re-implementing it in a
+ * script, and something that can be driven can be tested the same way.
+ */
+export interface UiHandle {
+  getState(): AppState
+  subscribe(listener: (state: AppState) => void): () => void
+}
+
 declare global {
   interface Window {
     prolivis?: ProLiVisApi
   }
+}
+
+/**
+ * Attach the interface state to the API. Called by the app once the store exists; the
+ * API is usable without it, which is what keeps it scriptable headlessly.
+ */
+export function installUi(ui: UiHandle): void {
+  api.ui = ui
 }
 
 /** Attach the API to `window`. Called once at startup. */

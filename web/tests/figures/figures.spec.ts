@@ -127,11 +127,10 @@ test('generate paper figures', async ({ page }) => {
   )
 
   // Screenshots of the interface itself, for the README and the paper's tool section.
-  await page.evaluate((organismId) => {
-    const store = (window as unknown as { __store?: unknown }).__store
-    void store
-    void organismId
-  }, SARS_COV_2)
+  await page.evaluate(
+    (organismId) => window.prolivis!.ui!.getState().selectOrganism(organismId),
+    SARS_COV_2,
+  )
 
   await page.locator('canvas').waitFor()
   await page.waitForTimeout(1200)

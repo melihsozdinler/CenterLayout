@@ -6,6 +6,7 @@
  */
 
 import type { NetworkLayoutResult, NetworkNode } from '../network-layout'
+import type { HighLevelLayoutNode, HighLevelLayoutResult } from '../highlevel-layout'
 import type { MatrixView } from '../matrix'
 import { PROLIVIS_STYLE, type Scene, type SceneItem, type SceneStyle } from './scene'
 
@@ -164,6 +165,146 @@ export function networkNeighbourhood(
     else if (edge.target === index) ids.add(edge.source)
   }
   return ids
+}
+
+// --- high-level graph -------------------------------------------------------
+
+export interface HighLevelSceneOptions {
+  readonly style?: SceneStyle
+  readonly highlight?: string | null
+  /** Draw the interaction count on each link while there are few enough to read. */
+  readonly labelEdgesBelow?: number
+  readonly padding?: number
+}
+
+/** Radius of a module node, shared by the scene and by hit-testing. */
+function moduleRadius(size: number, maxSize: number): number {
+  // Area with membership, floored at something a label fits inside.
+  return 14 + 30 * Math.sqrt(size / Math.max(1, maxSize))
+}
+
+/**
+ * The high-level graph: modules as nodes, evidence as links.
+ *
+ * Both channels on a module are about evidence rather than decoration — the fill says
+ * how big it is, the ring says how well its own interior is supported. A large pale
+ * module is a lot of proteins held together by very little.
+ */
+export function highLevelScene(
+  layout: HighLevelLayoutResult,
+  options: HighLevelSceneOptions = {},
+): Scene {
+  const style = options.style ?? PROLIVIS_STYLE
+  const padding = options.padding ?? 90
+  const labelEdgesBelow = options.labelEdgesBelow ?? 40
+  const highlight = options.highlight ?? null
+
+  const items: SceneItem[] = []
+  const nodes = layout.nodes
+  const maxSize = Math.max(1, ...nodes.map((n) => n.size))
+  const maxCount = Math.max(1, ...layout.edges.map((e) => e.edgeCount))
+
+  for (const edge of layout.edges) {
+    const a = nodes[edge.source]
+    const b = nodes[edge.target]
+    if (!a || !b) continue
+    const dimmed = highlight !== null && a.id !== highlight && b.id !== highlight
+
+    items.push({
+      kind: 'line',
+      x1: a.x,
+      y1: a.y,
+      x2: b.x,
+      y2: b.y,
+      stroke: trustColour(edge.trust, dimmed ? 0.08 : 0.35 + 0.5 * edge.trust),
+      // Width is how many interactions span the two modules, on a square-root scale so
+      // one very heavy link does not reduce the rest to hairlines.
+      width: 0.8 + 7 * Math.sqrt(edge.edgeCount / maxCount),
+    })
+  }
+
+  if (layout.edges.length <= labelEdgesBelow) {
+    for (const edge of layout.edges) {
+      const a = nodes[edge.source]
+      const b = nodes[edge.target]
+      if (!a || !b) continue
+      items.push({
+        kind: 'text',
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2 - 3,
+        text: String(edge.edgeCount),
+        fill: style.textMuted,
+        fontSize: 10,
+        anchor: 'middle',
+      })
+    }
+  }
+
+  for (const node of nodes) {
+    const radius = moduleRadius(node.size, maxSize)
+    const dimmed = highlight !== null && node.id !== highlight
+    items.push({
+      kind: 'circle',
+      id: node.id,
+      x: node.x,
+      y: node.y,
+      radius,
+      fill: MODULE_COLOURS[node.index % MODULE_COLOURS.length] ?? style.system,
+      // The ring is the module's internal support: a thick dark ring means the proteins
+      // inside are held together by well-replicated interactions.
+      stroke: trustColour(node.internalTrust ?? 0, 0.9),
+      strokeWidth: 1 + 4 * (node.internalTrust ?? 0),
+      opacity: dimmed ? 0.25 : 1,
+    })
+  }
+
+  for (const node of nodes) {
+    const radius = moduleRadius(node.size, maxSize)
+    if (highlight !== null && node.id !== highlight) continue
+    items.push({
+      kind: 'text',
+      x: node.x,
+      y: node.y + 4,
+      text: String(node.size),
+      fill: '#ffffff',
+      fontSize: Math.min(16, Math.max(9, radius * 0.5)),
+      anchor: 'middle',
+      weight: 700,
+    })
+    items.push({
+      kind: 'text',
+      x: node.x,
+      y: node.y + radius + 13,
+      text: node.label,
+      fill: style.text,
+      fontSize: 11,
+      anchor: 'middle',
+      weight: 500,
+    })
+  }
+
+  const reach = layout.extent + padding
+  return { bounds: [-reach, -reach, reach, reach], items, background: style.background }
+}
+
+/** The module under a world-space point, if any. */
+export function highLevelNodeAt(
+  layout: HighLevelLayoutResult,
+  x: number,
+  y: number,
+): HighLevelLayoutNode | null {
+  const maxSize = Math.max(1, ...layout.nodes.map((n) => n.size))
+  let best: HighLevelLayoutNode | null = null
+  let bestDistance = Infinity
+
+  for (const node of layout.nodes) {
+    const distance = Math.hypot(node.x - x, node.y - y)
+    if (distance <= moduleRadius(node.size, maxSize) && distance < bestDistance) {
+      bestDistance = distance
+      best = node
+    }
+  }
+  return best
 }
 
 // --- matrix -----------------------------------------------------------------

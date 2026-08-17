@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from './store'
 import {
+  highLevelNodeAt,
+  highLevelScene,
   matrixScene,
   networkNeighbourhood,
   networkNodeAt,
@@ -8,6 +10,7 @@ import {
 } from '../views/render/network-scene'
 import { paintScene, PROLIVIS_STYLE, PROLIVIS_STYLE_DARK } from '../views/render/scene'
 import type { NetworkNode } from '../views/network-layout'
+import type { HighLevelLayoutNode } from '../views/highlevel-layout'
 
 /**
  * The protein–protein network and the adjacency matrix.
@@ -22,14 +25,18 @@ export function NetworkView() {
 
   const view = useApp((s) => s.view)
   const network = useApp((s) => s.network)
+  const highLevel = useApp((s) => s.highLevel)
   const matrix = useApp((s) => s.matrix)
   const colourBy = useApp((s) => s.networkSettings.colourBy)
   const selected = useApp((s) => s.selectedNodeIndex)
   const selectNode = useApp((s) => s.selectNetworkNode)
   const focusProtein = useApp((s) => s.focusProtein)
+  const drillInto = useApp((s) => s.drillInto)
+  const setGrouping = useApp((s) => s.setGrouping)
 
   const [viewport, setViewport] = useState({ scale: 0.6, offsetX: 0, offsetY: 0 })
   const [hovered, setHovered] = useState<NetworkNode | null>(null)
+  const [hoveredModule, setHoveredModule] = useState<HighLevelLayoutNode | null>(null)
   const [size, setSize] = useState({ width: 800, height: 600 })
   const dragRef = useRef<{
     x: number
@@ -44,6 +51,7 @@ export function NetworkView() {
 
   const scene = useMemo(() => {
     if (view === 'matrix' && matrix) return matrixScene(matrix, { style })
+    if (view === 'network' && highLevel) return highLevelScene(highLevel, { style })
     if (view === 'network' && network) {
       const highlight =
         selected === null ? undefined : networkNeighbourhood(network, selected)
@@ -54,7 +62,7 @@ export function NetworkView() {
       })
     }
     return null
-  }, [view, network, matrix, colourBy, selected, style])
+  }, [view, network, highLevel, matrix, colourBy, selected, style])
 
   // Fit whenever a new scene arrives.
   useEffect(() => {
@@ -108,12 +116,22 @@ export function NetworkView() {
     [size, viewport],
   )
 
-  const empty = (view === 'network' && !network) || (view === 'matrix' && !matrix)
+  const empty =
+    (view === 'network' && !network && !highLevel) || (view === 'matrix' && !matrix)
 
   // A spring embedding stops conveying structure well before it stops running. Say so
   // rather than presenting a blob as a result.
   const tooLargeForForce =
     view === 'network' && network?.mode === 'force' && network.nodes.length > 1500
+
+  // Grouped mode is the other thing a reader reaches for at this size, and on a PPI
+  // network it does almost nothing: the network is one giant connected component, so
+  // every protein lands in one group. Say so, and offer the view that does work.
+  const groupedIsOneBlob =
+    view === 'network' &&
+    network?.mode === 'grouped' &&
+    network.groupCount <= 2 &&
+    network.nodes.length > 400
 
   return (
     <div className="canvas-wrap" ref={containerRef}>
@@ -138,8 +156,13 @@ export function NetworkView() {
             }))
             return
           }
-          if (view !== 'network' || !network) return
+          if (view !== 'network') return
           const world = toWorld(e.clientX, e.clientY)
+          if (highLevel) {
+            setHoveredModule(highLevelNodeAt(highLevel, world.x, world.y))
+            return
+          }
+          if (!network) return
           setHovered(networkNodeAt(network, world.x, world.y))
         }}
         onPointerDown={(e) => {
@@ -155,9 +178,18 @@ export function NetworkView() {
           const drag = dragRef.current
           dragRef.current = null
           e.currentTarget.releasePointerCapture(e.pointerId)
-          if (view !== 'network' || !network || !drag) return
+          if (view !== 'network' || !drag) return
           if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) >= 4) return
           const world = toWorld(e.clientX, e.clientY)
+
+          // On the high-level graph a click opens the module: this is the drill-down,
+          // and it is the only way down to the proteins from here.
+          if (highLevel) {
+            const module = highLevelNodeAt(highLevel, world.x, world.y)
+            if (module) void drillInto(module.id)
+            return
+          }
+          if (!network) return
           const node = networkNodeAt(network, world.x, world.y)
           if (!node) {
             selectNode(null)
@@ -175,16 +207,41 @@ export function NetworkView() {
         }}
       />
 
-      {tooLargeForForce && (
+      {hoveredModule && (
+        <div className="tooltip" role="status">
+          <strong>{hoveredModule.label}</strong>
+          <div className="tooltip-rows">
+            <span>{hoveredModule.size.toLocaleString()} proteins</span>
+            <span>
+              {hoveredModule.internalEdges.toLocaleString()} interactions inside
+              {hoveredModule.internalTrust === null
+                ? ''
+                : `, mean trust ${hoveredModule.internalTrust.toFixed(2)}`}
+            </span>
+            <span>{hoveredModule.degree} linked modules</span>
+            <span className="hint">Click to open</span>
+          </div>
+          <div className="tooltip-members">
+            {hoveredModule.memberLabels.slice(0, 8).join(', ')}
+            {hoveredModule.memberLabels.length > 8 ? ' …' : ''}
+          </div>
+        </div>
+      )}
+
+      {(tooLargeForForce || groupedIsOneBlob) && !highLevel && (
         <div className="canvas-notice">
           <strong>
-            {network!.nodes.length.toLocaleString()} proteins is too many for a force
-            layout to say anything.
+            {network!.nodes.length.toLocaleString()} proteins is too many to read as one
+            picture.
           </strong>
           <span>
-            Raise the trust threshold, switch the arrangement to “Modules on a ring”, or
-            use the Matrix view.
+            {groupedIsOneBlob
+              ? 'Grouping by component cannot help: this network is a single component.'
+              : 'Raise the trust threshold, or read it one level up.'}
           </span>
+          <button className="primary" onClick={() => void setGrouping('modules')}>
+            Show modules instead
+          </button>
         </div>
       )}
 

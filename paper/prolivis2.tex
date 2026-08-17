@@ -99,6 +99,11 @@ paper removes.
   \item Structural extraction under an evidence threshold (\S\ref{sec:structure}),
         including edge removal in ascending order of trust, which asks what network
         structure survives if only well-supported interactions are believed.
+  \item A recursive high-level reading of a network too large to draw
+        (\S\ref{sec:structure}): modules as nodes and evidence as links, with any
+        module openable into its own high-level graph. The grouping is chosen per
+        level, because the structural decomposition that works on a sparsely studied
+        organism returns a densely studied core unchanged.
   \item A zero-installation implementation (\S\ref{sec:implementation}) that ingests
         full BioGRID releases in the browser, keeps user data local, and emits session
         manifests sufficient to reproduce any figure.
@@ -268,6 +273,36 @@ pivoting over a degeneracy ordering, biconnected components and articulation poi
 Hopcroft--Tarjan, $k$-cores, and contraction to a high-level graph whose inter-module
 edges carry the summed trust of the original edges spanning them.
 
+\subsection{Reading a network one level up}
+\label{sec:highlevel}
+
+A network of $10^5$ interactions cannot be read as a node--link diagram at any layout
+quality. Contraction answers this only if it can be applied repeatedly: the modules of
+a large network are themselves large. We therefore define a drill-down in which a
+high-level node expands into a high-level graph of its own, and iterate until a level
+is small enough to draw as proteins.
+
+Which grouping to contract by cannot be fixed in advance. Biconnected components are
+the natural first choice, being structural rather than optimised --- a module is a set
+of proteins that remains connected when any one of them is removed --- and on a
+sparsely studied organism they carry most of the answer, since the reported network is
+largely bridges (\S\ref{sec:evaluation}). But a well-studied core \emph{is}
+biconnected: the decomposition returns it unchanged, and a drill-down built on it
+descends forever into the same picture. We therefore contract by biconnected components
+when they decompose the graph --- more than one component, none holding essentially all
+of it --- and by modularity otherwise, using Louvain \cite{louvain} weighted by trust,
+so that a community is held together by evidence rather than by edge count. Modularity
+always divides, and divides again, which is the property the recursion needs.
+
+Two details matter for correctness of the picture rather than of the algorithm.
+Biconnected components share their articulation points, so the groups are made disjoint
+before drawing --- each protein is claimed by the largest group containing it --- since
+a protein drawn in two modules is counted twice, sized twice, and ambiguous to click.
+And a long tail of two-protein modules is folded into a single node rather than
+discarded, so no protein leaves the picture as one descends. Our Louvain implementation
+visits nodes in index order rather than at random, making the partition, and therefore
+the figure, reproducible.
+
 We add one non-standard variant. Girvan--Newman removal deletes the edge of highest
 betweenness, identifying joins in the network \emph{as reported}. Removal in ascending
 order of trust instead deletes the least well-supported edge first, and answers a
@@ -320,6 +355,17 @@ experimental-system breakdown in 0.4\,s; the centre layout for \emph{Homo sapien
 gathered evidence --- 1.6\,ms for 898 interactions --- which is what permits
 interactive re-weighting. Maximal-clique extraction over the human graph thresholded at
 $0.3$ (14{,}567 proteins, 122{,}317 interactions) takes 0.4\,s.
+
+\paragraph{Reading a large network one level up.} The complete human interactome in
+release 5.0.260 --- 29{,}104 proteins and 1{,}047{,}820 interactions, with no trust
+threshold applied --- contracts to 60 modules in 1.6\,s. Biconnected components
+decompose it, but its largest module is a biconnected core of 22{,}182 proteins, which
+is precisely the case a structural decomposition cannot subdivide. Opening that core
+contracts it by modularity into 11 communities (2.3\,s, largest 5{,}112); opening the
+largest of those gives 11 communities (0.2\,s, largest 1{,}152); the next gives 10
+(largest 240), at which point the level is drawn as proteins. Four steps take a reader
+from a million interactions to 240 proteins, each step a click, and no protein is
+dropped along the way.
 
 \paragraph{Evidence structure.} Restricted to SARS-CoV-2, the network has 875 proteins
 and 880 interactions in 63 components; 724 of the 880 interactions are bridges. Raising
@@ -386,6 +432,9 @@ complexes. \emph{Nucleic Acids Research}, 47(D1), 2019.
 \bibitem{humap} K.~Drew et~al. hu.MAP 2.0: integration of over 15,000 proteomic
 experiments builds a global compendium of human multiprotein assemblies.
 \emph{Molecular Systems Biology}, 17(5), 2021.
+\bibitem{louvain} V.~D.~Blondel, J.-L.~Guillaume, R.~Lambiotte, E.~Lefebvre. Fast
+unfolding of communities in large networks. \emph{Journal of Statistical Mechanics},
+P10008, 2008.
 \end{thebibliography}
 
 \end{document}

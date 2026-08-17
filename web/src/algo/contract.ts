@@ -7,12 +7,14 @@
  * membership that produced it, so any of it can be expanded back.
  */
 
+import { louvain } from './community'
 import type { PpiGraph } from './graph'
 import { biconnectedComponents, connectedComponents, kCores, maximalCliques } from './structure'
 
 export type GroupingStrategy =
   | 'connected-components'
   | 'biconnected-components'
+  | 'communities'
   | 'cliques'
   | 'k-core'
   | 'partition'
@@ -57,6 +59,10 @@ export interface ContractOptions {
   /** For `partition`, an explicit group index per node. */
   readonly partition?: readonly number[]
   readonly maxCliques?: number
+  /** For `communities`, the modularity resolution. Higher gives smaller communities. */
+  readonly resolution?: number
+  /** Report and label as this strategy; for grouping computed elsewhere. */
+  readonly labelAs?: GroupingStrategy
 }
 
 /** Group nodes by the chosen strategy, then contract. */
@@ -64,10 +70,14 @@ export function contract(
   graph: PpiGraph,
   options: ContractOptions = {},
 ): HighLevelGraph {
-  const strategy = options.strategy ?? 'connected-components'
+  const strategy = options.labelAs ?? options.strategy ?? 'connected-components'
   const minGroupSize = options.minGroupSize ?? 2
 
-  const { groups, truncated } = groupNodes(graph, strategy, options)
+  const { groups, truncated } = groupsFor(
+    graph,
+    options.strategy ?? 'connected-components',
+    options,
+  )
   const kept = groups.filter((g) => g.length >= minGroupSize)
 
   // A node may belong to several cliques; the first group wins for edge attribution so
@@ -132,10 +142,11 @@ export function contract(
   return { strategy, nodes, edges, ungrouped, truncated }
 }
 
-function groupNodes(
+/** The groups a strategy produces, before any contraction. May overlap. */
+export function groupsFor(
   graph: PpiGraph,
   strategy: GroupingStrategy,
-  options: ContractOptions,
+  options: ContractOptions = {},
 ): { groups: number[][]; truncated: boolean } {
   switch (strategy) {
     case 'connected-components':
@@ -154,6 +165,15 @@ function groupNodes(
         return [...nodes].sort((a, b) => a - b)
       })
       return { groups, truncated: false }
+    }
+
+    case 'communities': {
+      const result = louvain(graph, {
+        ...(options.resolution === undefined ? {} : { resolution: options.resolution }),
+      })
+      const byCommunity: number[][] = Array.from({ length: result.count }, () => [])
+      result.communityOf.forEach((c, node) => byCommunity[c]!.push(node))
+      return { groups: byCommunity, truncated: false }
     }
 
     case 'cliques': {
@@ -221,9 +241,192 @@ function labelFor(
       ? `Clique ${index + 1}`
       : strategy === 'biconnected-components'
         ? `Module ${index + 1}`
-        : strategy === 'k-core'
-          ? `Core ${index + 1}`
-          : `Group ${index + 1}`
+        : strategy === 'communities'
+          ? `Community ${index + 1}`
+          : strategy === 'k-core'
+            ? `Core ${index + 1}`
+            : `Group ${index + 1}`
 
   return `${prefix}: ${named.join(', ')}${group.length > 3 ? ` +${group.length - 3}` : ''}`
+}
+
+/**
+ * Below this many proteins, a network is drawn as proteins rather than contracted.
+ *
+ * Not a performance limit — a few hundred nodes render instantly. It is the size at
+ * which a node-link diagram still says something, so contracting further would hide
+ * structure the reader could have seen directly.
+ */
+export const DRAW_PROTEINS_BELOW = 240
+
+/** Most modules worth drawing at once. Beyond this the high-level view is a hairball too. */
+export const MAX_MODULES = 60
+
+export interface AutoContractOptions {
+  readonly maxModules?: number
+  readonly resolution?: number
+}
+
+/**
+ * Contract a graph by whichever grouping actually decomposes it.
+ *
+ * Biconnected components come first, because they are structural rather than
+ * optimized: a module is a set of proteins that stay connected when any one of them is
+ * removed, which is a statement about the network, not about a parameter. In a sparsely
+ * studied organism this is most of the answer — on the coronavirus release, 724 of 880
+ * interactions are bridges, so the decomposition is fine-grained and meaningful.
+ *
+ * But a well-studied core *is* biconnected, and then the decomposition returns it
+ * unchanged: one module holding everything, which is no progress and, on a drill-down,
+ * an infinite descent into the same picture. When that happens the graph is divided by
+ * modularity instead, which always splits and can be applied again to the result.
+ *
+ * Note that biconnected components share articulation points, and a contracted node
+ * claims each protein once — so an articulation protein appears in the first module
+ * that claims it, not in every module it joins. Drilling into a module therefore shows
+ * that module's proteins, not its boundary.
+ */
+export function autoContract(
+  graph: PpiGraph,
+  options: AutoContractOptions = {},
+): HighLevelGraph {
+  const maxModules = options.maxModules ?? MAX_MODULES
+
+  const structural = groupsFor(graph, 'biconnected-components').groups.filter(
+    (group) => group.length >= 2,
+  )
+  const largest = structural.reduce((max, group) => Math.max(max, group.length), 0)
+
+  // "Decomposes" means more than one module and no module that is essentially the whole
+  // graph. The 90% allows a periphery of bridges to be peeled off a core without that
+  // counting as having divided it.
+  const decomposes = structural.length >= 2 && largest < graph.order * 0.9
+
+  const groups = decomposes
+    ? structural
+    : groupsFor(graph, 'communities', {
+        ...(options.resolution === undefined ? {} : { resolution: options.resolution }),
+      }).groups
+
+  // Minimum size 1, unlike the analytical contractions: a protein that ends up in no
+  // module is still in the network, and dropping it would quietly shrink the picture
+  // every time you drilled down. Along a chain of bridges most modules *are* single
+  // proteins, and the fold below gathers that tail into one node rather than losing it.
+  const contracted = contract(graph, {
+    strategy: 'partition',
+    partition: disjointPartition(graph, groups),
+    minGroupSize: 1,
+    labelAs: decomposes ? 'biconnected-components' : 'communities',
+  })
+
+  return foldSmallModules(contracted, maxModules)
+}
+
+/**
+ * Turn possibly-overlapping groups into an assignment of one group per protein.
+ *
+ * Biconnected components share their articulation points, and a protein drawn as part
+ * of two modules is counted twice, sized twice, and ambiguous to click on. Each protein
+ * is therefore claimed by the largest group containing it — largest because the
+ * alternative, first-listed, would let a two-protein bridge component steal a hub from
+ * the complex it anchors. Proteins no group claims get a singleton, which the minimum
+ * group size then drops into `ungrouped`.
+ */
+function disjointPartition(graph: PpiGraph, groups: readonly (readonly number[])[]): number[] {
+  const ordered = groups
+    .map((group, index) => ({ group, index }))
+    .sort((a, b) => b.group.length - a.group.length || a.index - b.index)
+
+  const assignment = new Array<number>(graph.order).fill(-1)
+  let next = 0
+  for (const { group } of ordered) {
+    const unclaimed = group.filter((node) => assignment[node] === -1)
+    if (unclaimed.length === 0) continue
+    const id = next
+    next += 1
+    for (const node of unclaimed) assignment[node] = id
+  }
+  for (let node = 0; node < graph.order; node += 1) {
+    if (assignment[node] === -1) {
+      assignment[node] = next
+      next += 1
+    }
+  }
+  return assignment
+}
+
+/**
+ * Fold the smallest modules into one, so the high-level graph stays readable.
+ *
+ * The same move the center layout makes with rarely-used methods, and for the same
+ * reason: a long tail of two-protein modules fills the canvas with nodes too small to
+ * read while hiding the modules that matter. The tail is kept as a single node rather
+ * than dropped — it is still part of the network, and it can be opened.
+ */
+export function foldSmallModules(
+  high: HighLevelGraph,
+  maxModules: number,
+): HighLevelGraph {
+  if (high.nodes.length <= maxModules || maxModules < 2) return high
+
+  const bySize = [...high.nodes].sort((a, b) => b.size - a.size || (a.id < b.id ? -1 : 1))
+  const keep = bySize.slice(0, maxModules - 1)
+  const folded = bySize.slice(maxModules - 1)
+  const foldedIds = new Set(folded.map((n) => n.id))
+
+  const FOLD_ID = 'gsmall'
+  const members = folded.flatMap((n) => [...n.members])
+  const memberLabels = folded.flatMap((n) => [...n.memberLabels])
+
+  let internalEdges = folded.reduce((sum, n) => sum + n.internalEdges, 0)
+  let internalTrustMass = folded.reduce(
+    (sum, n) => sum + (n.internalTrust ?? 0) * n.internalEdges,
+    0,
+  )
+
+  const between = new Map<string, { count: number; trust: number }>()
+  const add = (a: string, b: string, count: number, trust: number) => {
+    const key = a < b ? `${a} ${b}` : `${b} ${a}`
+    const existing = between.get(key)
+    if (existing) {
+      existing.count += count
+      existing.trust += trust
+    } else {
+      between.set(key, { count, trust })
+    }
+  }
+
+  for (const edge of high.edges) {
+    const a = foldedIds.has(edge.source) ? FOLD_ID : edge.source
+    const b = foldedIds.has(edge.target) ? FOLD_ID : edge.target
+    if (a === FOLD_ID && b === FOLD_ID) {
+      // Links between two folded modules are now inside the folded node.
+      internalEdges += edge.edgeCount
+      internalTrustMass += edge.trustMass
+      continue
+    }
+    add(a, b, edge.edgeCount, edge.trustMass)
+  }
+
+  const foldedNode: HighLevelNode = {
+    id: FOLD_ID,
+    label: `${folded.length} small modules`,
+    members,
+    memberLabels,
+    size: members.length,
+    internalEdges,
+    internalTrust: internalEdges === 0 ? null : internalTrustMass / internalEdges,
+  }
+
+  const nodes = [...keep, foldedNode]
+  const present = new Set(nodes.map((n) => n.id))
+  const edges: HighLevelEdge[] = [...between.entries()]
+    .map(([key, value]) => {
+      const [source, target] = key.split(' ') as [string, string]
+      return { source, target, edgeCount: value.count, trustMass: value.trust }
+    })
+    .filter((e) => present.has(e.source) && present.has(e.target))
+    .sort((a, b) => b.trustMass - a.trustMass)
+
+  return { ...high, nodes, edges }
 }

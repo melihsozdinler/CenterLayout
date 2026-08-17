@@ -44,6 +44,9 @@ largest nodes are where most* interactions *are. They are not the same methods.*
 - Scores every interaction with a documented **citation-trust** model: replication,
   **independent laboratories**, method diversity, assay directness, throughput,
   literature impact and currency. Unknown inputs are reported as unknown, never as zero.
+- **Reads a network too large to draw** one level up: modules as nodes, evidence as
+  links, and any module opens into its own high-level graph. Four clicks take you from
+  the million-interaction human network to 240 proteins.
 - Extracts structure: maximal cliques, biconnected components, articulation points,
   bridges, *k*-cores, and edge-removal cascades — including removal in
   *trust-ascending* order, which asks what survives if you only believe the evidence.

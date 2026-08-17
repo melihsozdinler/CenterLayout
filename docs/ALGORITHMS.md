@@ -84,6 +84,51 @@ expanded back.
 Where groups overlap — a protein in several cliques — the first group claims it for
 edge attribution, so trust mass is counted once rather than multiplied across overlaps.
 
+## Communities (Louvain) — `O(m log n)` in practice
+
+Modularity optimization: move each node to the neighbouring community that most
+improves modularity, aggregate the communities into single nodes, repeat. Weighted by
+trust, so a community is held together by *evidence* — a module resting on one paper
+per interaction does not survive as one.
+
+**Deterministic**, unlike the published algorithm, which visits nodes in random order
+and gives a different partition per run. Nodes are visited in index order and ties go to
+the community a node is already in. A figure that cannot be regenerated is not evidence.
+
+Worth knowing before concluding that two complexes are one: classical modularity has a
+resolution limit, and merges modules smaller than roughly √(2m) edges. `resolution`
+above 1 gives smaller communities.
+
+## The high-level view — recursive contraction
+
+`autoContract` is what the **Modules** view calls, and it differs from `contract` in one
+way that matters: it can be applied to its own output.
+
+It contracts by **biconnected components** where they decompose the graph — more than
+one module, none holding essentially all of it. That is the honest first choice, being
+structural rather than optimized, and on a sparsely studied organism it is most of the
+answer: 724 of the 880 coronavirus interactions are bridges.
+
+But a well-studied core *is* biconnected, so the decomposition returns it unchanged.
+Drilling into it would show exactly what you clicked, forever. When that happens the
+graph is divided by **communities** instead, which always splits and can split again.
+
+Two things are done for the picture rather than for the algorithm:
+
+- **Groups are made disjoint** before drawing — each protein is claimed by the largest
+  group containing it. Biconnected components share their articulation points, and a
+  protein drawn in two modules is counted twice, sized twice, and ambiguous to click.
+  So a module shows its own proteins, not its boundary.
+- **The long tail is folded**, not dropped, into one `n small modules` node. Along a
+  chain of bridges most modules are a single protein; dropping them would shrink the
+  network slightly at every level, silently.
+
+On the full human interactome — 29,104 proteins, 1,047,820 interactions, no trust
+threshold — this is 60 modules in 1.6 s, whose largest is a biconnected core of 22,182
+proteins. Opening it gives 11 communities in 2.3 s (largest 5,112), then 11 (largest
+1,152), then 10 (largest 240), which is drawn as proteins. Four clicks from a million
+interactions to something a person can read.
+
 ## Matrix seriation
 
 Breadth-first traversal within components, largest first, visiting the highest-degree
