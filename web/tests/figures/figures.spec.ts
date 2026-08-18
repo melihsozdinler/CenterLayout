@@ -230,6 +230,11 @@ interface DescentLevel {
 }
 
 test('generate high-level figures', async ({ page }) => {
+  // Required, not preferred. These outputs are attributed to the human interactome in
+  // the manuscript; quietly falling back to a smaller release would put coronavirus
+  // numbers under a table that says "human", which is precisely the error this pipeline
+  // exists to prevent.
+  test.skip(!BIG, 'set PROLIVIS_BIG_FIXTURE to a full BioGRID release')
   test.setTimeout(30 * 60_000)
   mkdirSync(OUTPUT, { recursive: true })
 
@@ -238,7 +243,7 @@ test('generate high-level figures', async ({ page }) => {
   await page.evaluate(() => window.prolivis!.wipe())
   await page.reload()
 
-  const source = BIG ?? SOURCE ?? resolve(here, '../fixtures/biogrid-sample.tab3.zip')
+  const source = BIG!
   await page.setInputFiles('input[type="file"]', source)
   await expect
     .poll(

@@ -10,7 +10,7 @@
       "modules": 14,
       "largest": 5624,
       "strategy": "communities",
-      "seconds": 2.0998000000044703
+      "seconds": 1.8752999999970197
     },
     {
       "order": 5624,
@@ -18,7 +18,7 @@
       "modules": 9,
       "largest": 1276,
       "strategy": "communities",
-      "seconds": 0.1886000000014901
+      "seconds": 0.19259999999403954
     },
     {
       "order": 1276,
@@ -26,7 +26,7 @@
       "modules": 10,
       "largest": 267,
       "strategy": "communities",
-      "seconds": 0.015600000001490116
+      "seconds": 0.02
     },
     {
       "order": 267,
@@ -34,7 +34,7 @@
       "modules": 8,
       "largest": 53,
       "strategy": "communities",
-      "seconds": 0.002100000001490116
+      "seconds": 0.0030999999940395356
     }
   ]
 }

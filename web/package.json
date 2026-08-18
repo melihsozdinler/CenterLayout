@@ -1,7 +1,7 @@
 {
   "name": "prolivis",
   "version": "2.0.0",
-  "description": "ProLiVis 2.0 — Protein-Protein Interaction Literature Visualization System. A zero-install, static web application for BioGRID PPI networks with citation-trust scoring.",
+  "description": "ProLiVis 2.0 \u2014 Protein-Protein Interaction Literature Visualization System. A zero-install, static web application for BioGRID PPI networks with citation-trust scoring.",
   "license": "MIT",
   "type": "module",
   "private": true,
@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "figures": "playwright test --config playwright.figures.config.ts"
+    "figures": "playwright test --config playwright.figures.config.ts figures.spec",
+    "screenshots": "playwright test --config playwright.figures.config.ts screenshots"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",

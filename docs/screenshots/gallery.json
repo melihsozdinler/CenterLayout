@@ -1,0 +1,66 @@
+{
+  "source": "BIOGRID-ALL-5.0.260.tab3.zip",
+  "release": "5.0.260",
+  "shots": [
+    {
+      "slug": "human",
+      "organism": "Homo sapiens",
+      "organismId": 9606,
+      "grouping": "communities",
+      "proteins": 29104,
+      "interactions": 1047820,
+      "publications": 16148,
+      "modules": 14
+    },
+    {
+      "slug": "yeast",
+      "organism": "Saccharomyces cerevisiae (S288c)",
+      "organismId": 559292,
+      "grouping": "communities",
+      "proteins": 7220,
+      "interactions": 196067,
+      "publications": 15698,
+      "modules": 12
+    },
+    {
+      "slug": "fly",
+      "organism": "Drosophila melanogaster",
+      "organismId": 7227,
+      "grouping": "communities",
+      "proteins": 11121,
+      "interactions": 68724,
+      "publications": 8068,
+      "modules": 59
+    },
+    {
+      "slug": "mouse",
+      "organism": "Mus musculus",
+      "organismId": 10090,
+      "grouping": "communities",
+      "proteins": 19372,
+      "interactions": 101623,
+      "publications": 5143,
+      "modules": 47
+    },
+    {
+      "slug": "arabidopsis",
+      "organism": "Arabidopsis thaliana (Columbia)",
+      "organismId": 3702,
+      "grouping": "communities",
+      "proteins": 11729,
+      "interactions": 73414,
+      "publications": 2456,
+      "modules": 36
+    },
+    {
+      "slug": "zebrafish",
+      "organism": "Danio rerio",
+      "organismId": 7955,
+      "grouping": "biconnected-components",
+      "proteins": 529,
+      "interactions": 545,
+      "publications": 84,
+      "modules": 43
+    }
+  ]
+}
