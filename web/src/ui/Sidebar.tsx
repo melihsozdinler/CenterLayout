@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from './store'
 import { api } from '../api'
 import { CollectionPanel, LiteraturePanel } from './LiteraturePanel'
@@ -378,6 +378,8 @@ export function Sidebar() {
         </section>
       )}
 
+      {state.view === 'center' && state.layout && <PublicationFilter />}
+
       {state.view === 'center' && state.layout && (
         <section className="panel">
           <h2>Layout</h2>
@@ -452,6 +454,230 @@ export function Sidebar() {
  * user's rather than ours — base URL and template are both editable, and anything
  * added persists in this browser.
  */
+/**
+ * Which publications the center layout draws.
+ *
+ * Every publication is one node here regardless of what it reported, so a screen
+ * contributing ten thousand interactions and a structure paper contributing one look
+ * alike until you ask. These three questions are the ones that separate them: how much
+ * a paper contributed, how much of the proteome it touched, and how it looked.
+ *
+ * Bounds are the range of the *unfiltered* literature, so the numbers beside each box
+ * stay put while you narrow the view.
+ */
+function PublicationFilter() {
+  const layout = useApp((s) => s.layout)
+  const settings = useApp((s) => s.layoutSettings)
+  const systems = useApp((s) => s.systems)
+  const updateSettings = useApp((s) => s.updateSettings)
+
+  const filter = layout?.filter
+  if (!filter) return null
+
+  // What is on the canvas, which is not always what matched: the publication band is
+  // bounded, so a literature larger than it fits keeps its biggest contributors and
+  // leaves the rest undrawn. In duplicate mode one publication is several nodes, hence
+  // the distinct keys.
+  const drawn = new Set(
+    layout.nodes
+      .filter((node) => node.kind === 'publication')
+      .map((node) => node.id.split('@')[0]),
+  ).size
+  const undrawn = Math.max(0, filter.publicationsAfter - drawn)
+
+  const active =
+    settings.minInteractions !== null ||
+    settings.maxInteractions !== null ||
+    settings.minProteins !== null ||
+    settings.maxProteins !== null ||
+    settings.systems !== null
+
+  const toggleSystem = (name: string) => {
+    const chosen = settings.systems
+    if (chosen === null) {
+      // Nothing chosen means everything; the first click means "only this one",
+      // which is what a reader who clicks a method is asking for.
+      void updateSettings({ systems: [name] })
+      return
+    }
+    const next = chosen.includes(name)
+      ? chosen.filter((s) => s !== name)
+      : [...chosen, name]
+    void updateSettings({ systems: next.length === 0 ? null : next })
+  }
+
+  return (
+    <section className="panel filter">
+      <h2>
+        Filter publications
+        {active && (
+          <button
+            className="link clear"
+            onClick={() =>
+              void updateSettings({
+                minInteractions: null,
+                maxInteractions: null,
+                minProteins: null,
+                maxProteins: null,
+                systems: null,
+              })
+            }
+          >
+            clear
+          </button>
+        )}
+      </h2>
+
+      <p className="hint">
+        Drawing <strong>{drawn.toLocaleString()}</strong> of{' '}
+        {filter.publicationsBefore.toLocaleString()} publications. Counted within this
+        organism and the methods selected — the same quantity the node sizes encode, so
+        a paper's total across the whole release can be larger.
+        {filter.publicationsAfter === 0 && ' Nothing matches — widen a bound.'}
+      </p>
+
+      {undrawn > 0 && (
+        <p className="hint warn">
+          {undrawn.toLocaleString()} more match than the publication band can hold, so the
+          smallest contributors are not drawn. Narrow a bound to see them.
+        </p>
+      )}
+
+      <Bound
+        label="Interactions per publication"
+        range={filter.interactionRange}
+        min={settings.minInteractions}
+        max={settings.maxInteractions}
+        onChange={(min, max) =>
+          void updateSettings({ minInteractions: min, maxInteractions: max })
+        }
+      />
+
+      <Bound
+        label="Proteins per publication"
+        range={filter.proteinRange}
+        min={settings.minProteins}
+        max={settings.maxProteins}
+        onChange={(min, max) =>
+          void updateSettings({ minProteins: min, maxProteins: max })
+        }
+      />
+
+      {systems.length > 0 && (
+        <div className="method-filter">
+          <div className="method-head">
+            Methods
+            <span className="hint">
+              {settings.systems === null
+                ? `all ${systems.length}`
+                : `${settings.systems.length} of ${systems.length}`}
+            </span>
+          </div>
+          <ul className="method-list">
+            {systems.map((system) => {
+              const checked =
+                settings.systems === null || settings.systems.includes(system.name)
+              return (
+                <li key={system.name}>
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSystem(system.name)}
+                    />
+                    <span className={system.type === 'genetic' ? 'genetic' : ''}>
+                      {system.name}
+                    </span>
+                    <span className="hint">
+                      {system.publicationCount.toLocaleString()}
+                    </span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+          {settings.systems !== null && (
+            <button
+              className="link"
+              onClick={() => void updateSettings({ systems: null })}
+            >
+              select all
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/**
+ * A min/max pair.
+ *
+ * Committed on blur or Enter rather than on every keystroke: each change re-queries the
+ * release, and typing "1000" would otherwise run four of them, the first three for
+ * numbers the user never meant.
+ */
+function Bound({
+  label,
+  range,
+  min,
+  max,
+  onChange,
+}: {
+  label: string
+  range: readonly [number, number]
+  min: number | null
+  max: number | null
+  onChange: (min: number | null, max: number | null) => void
+}) {
+  const [lo, setLo] = useState(min === null ? '' : String(min))
+  const [hi, setHi] = useState(max === null ? '' : String(max))
+
+  // Follow the store when the bound changes from somewhere else — clearing the filter,
+  // or a manifest being restored. Without this the boxes keep showing numbers that are
+  // no longer in force, which is worse than showing nothing.
+  useEffect(() => setLo(min === null ? '' : String(min)), [min])
+  useEffect(() => setHi(max === null ? '' : String(max)), [max])
+
+  const parse = (text: string): number | null => {
+    const value = Number(text.trim())
+    return text.trim() === '' || !Number.isFinite(value) ? null : Math.max(0, value)
+  }
+  const commit = () => onChange(parse(lo), parse(hi))
+
+  return (
+    <div className="bound">
+      <div className="bound-label">{label}</div>
+      <div className="bound-inputs">
+        <input
+          type="number"
+          min={0}
+          value={lo}
+          placeholder={String(range[0])}
+          aria-label={`${label}, at least`}
+          onChange={(e) => setLo(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => e.key === 'Enter' && commit()}
+        />
+        <span>to</span>
+        <input
+          type="number"
+          min={0}
+          value={hi}
+          placeholder={String(range[1])}
+          aria-label={`${label}, at most`}
+          onChange={(e) => setHi(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => e.key === 'Enter' && commit()}
+        />
+      </div>
+      <p className="hint">
+        {range[0].toLocaleString()}–{range[1].toLocaleString()} in this literature.
+      </p>
+    </div>
+  )
+}
+
 function ResourceEditor() {
   const resources = useApp((s) => s.resources)
   const updateResources = useApp((s) => s.updateResources)

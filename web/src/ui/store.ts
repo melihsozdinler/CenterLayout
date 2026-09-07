@@ -8,7 +8,11 @@
 
 import { create } from 'zustand'
 import { api } from '../api'
-import type { DatasetSummary, OrganismSummary } from '../model/datasets'
+import type {
+  DatasetSummary,
+  ExperimentalSystemSummary,
+  OrganismSummary,
+} from '../model/datasets'
 import type { CenterLayoutResult } from '../views/center-layout'
 import type { NetworkLayoutResult, NetworkLayoutMode } from '../views/network-layout'
 import type { HighLevelLayoutResult } from '../views/highlevel-layout'
@@ -80,6 +84,20 @@ export interface LayoutSettings {
   readonly aggregateBelow: number
   readonly multiMethod: 'circular-mean' | 'duplicate'
   readonly showPublicationLabels: boolean
+  /**
+   * Which publications to draw. A screen reporting ten thousand interactions and a
+   * structure paper reporting one are both a single node here, so being able to ask
+   * for one kind or the other is the difference between a picture of a field and a
+   * picture of its largest screens.
+   *
+   * Null means no bound on that side.
+   */
+  readonly minInteractions: number | null
+  readonly maxInteractions: number | null
+  readonly minProteins: number | null
+  readonly maxProteins: number | null
+  /** Only these methods; null for all of them. */
+  readonly systems: readonly string[] | null
 }
 
 export interface AppState {
@@ -87,6 +105,8 @@ export interface AppState {
   activeDatasetId: string | null
   organisms: OrganismSummary[]
   activeOrganismId: number | null
+  /** Experimental systems present in the active organism, for the method filter. */
+  systems: ExperimentalSystemSummary[]
 
   view: ViewKind
   layout: CenterLayoutResult | null
@@ -148,6 +168,8 @@ export interface AppState {
   selectDataset: (datasetId: string | null) => Promise<void>
   selectOrganism: (organismId: number | null) => Promise<void>
   updateSettings: (settings: Partial<LayoutSettings>) => Promise<void>
+  /** Load the experimental systems present in the active organism. */
+  loadSystems: () => Promise<void>
   selectNode: (nodeId: string | null) => void
   removeDataset: (datasetId: string) => Promise<void>
   dismissError: () => void
@@ -195,12 +217,18 @@ export const useApp = create<AppState>((set, get) => ({
   activeDatasetId: null,
   organisms: [],
   activeOrganismId: null,
+  systems: [],
   view: 'center',
   layout: null,
   layoutSettings: {
     aggregateBelow: 0,
     multiMethod: 'circular-mean',
     showPublicationLabels: true,
+    minInteractions: null,
+    maxInteractions: null,
+    minProteins: null,
+    maxProteins: null,
+    systems: null,
   },
   selectedNodeId: null,
 
@@ -331,6 +359,26 @@ export const useApp = create<AppState>((set, get) => ({
     set({ activeOrganismId: organismId, selectedNodeId: null, selectedNodeIndex: null })
     await rebuildLayout(set, get)
     await get().searchLiterature(get().literatureQuery)
+    await get().loadSystems()
+  },
+
+  async loadSystems() {
+    const dataset = get().activeDatasetId
+    if (dataset === null) {
+      set({ systems: [] })
+      return
+    }
+    try {
+      const organismId = get().activeOrganismId
+      set({
+        systems: await api.systems(dataset, organismId ?? undefined),
+      })
+    } catch (e) {
+      // The method filter is an aid, not the view: a failure here should not blank
+      // the layout the user is looking at.
+      console.error('could not list experimental systems', e)
+      set({ systems: [] })
+    }
   },
 
   async setView(view) {
@@ -642,6 +690,16 @@ function labelOf(state: AppState, datasetId: string): string {
 
 type Setter = (partial: Partial<AppState>) => void
 
+/** Omit an unset bound rather than sending null, which the query would have to check. */
+function numeric<K extends string>(
+  key: K,
+  value: number | null,
+): Partial<Record<K, number>> {
+  return value === null || !Number.isFinite(value)
+    ? {}
+    : ({ [key]: value } as Record<K, number>)
+}
+
 async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
   const { activeDatasetId, activeOrganismId, layoutSettings, view, networkSettings } =
     get()
@@ -661,10 +719,25 @@ async function rebuildLayout(set: Setter, get: () => AppState): Promise<void> {
   set({ busy: view === 'center' ? 'Computing layout' : 'Building network' })
   try {
     if (view === 'center') {
-      const layout = await api.centerLayout(query, {
-        aggregateBelow: layoutSettings.aggregateBelow,
-        multiMethod: layoutSettings.multiMethod,
-      })
+      // A method scope, when there is one, is a stronger statement than the filter —
+      // the user asked to see one method's literature — so it wins.
+      const systems =
+        scope?.kind === 'system' ? scope.keys : (layoutSettings.systems ?? undefined)
+
+      const layout = await api.centerLayout(
+        {
+          ...query,
+          ...(systems === undefined ? {} : { systems }),
+          ...numeric('minInteractions', layoutSettings.minInteractions),
+          ...numeric('maxInteractions', layoutSettings.maxInteractions),
+          ...numeric('minProteins', layoutSettings.minProteins),
+          ...numeric('maxProteins', layoutSettings.maxProteins),
+        },
+        {
+          aggregateBelow: layoutSettings.aggregateBelow,
+          multiMethod: layoutSettings.multiMethod,
+        },
+      )
       set({ layout, error: null })
       return
     }

@@ -38,6 +38,34 @@ Options:
 The layout is deterministic: the same query always produces the same coordinates, which
 is what makes an exported figure reproducible.
 
+### Filtering the literature
+
+Every publication is one node here whatever it reported, so a screen contributing ten
+thousand interactions and a structure paper contributing one look alike until you ask.
+**Filter publications** in the sidebar asks, three ways:
+
+| Filter | The question it answers |
+| --- | --- |
+| Interactions per publication | How much did this paper contribute? Set a minimum to see only the screens; a maximum to see only the focused papers. |
+| Proteins per publication | How much of the proteome did it touch? Not the same question — ten interactions among three proteins is a complex, ten among twenty is a screen. |
+| Methods | What did it use? Tick one to see that technique's literature alone. |
+
+Counts are within the organism and the methods on screen — the same quantity the node
+areas encode — so a paper's total across the whole release can be larger than the
+number filtered on. The bounds beside each box are the range of the unfiltered
+literature, and they stay put while you narrow the view.
+
+Filtering also recomputes the method ring, because a sector's width is its share of the
+literature and a sector sized by papers that are no longer drawn would misstate the
+picture. The filter is recorded in the session manifest, so a filtered figure comes
+back filtered.
+
+**The whole literature does not always fit.** The publication band is bounded — the
+41,218 human publications in release 5.0.260 cannot be drawn legibly at any spacing, and
+about 16,000 of them fit — so when there are more publications than rows, the biggest
+contributors are drawn and the panel says how many were left out. Narrowing a bound is
+how you see the rest.
+
 ### From the literature to the interactions
 
 Clicking a **publication** node in the literature view opens the network that paper

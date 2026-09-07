@@ -91,6 +91,10 @@ from a BioGRID release. Counts are in
 - **Rebuilds the center layout** — organism → method → publication — deterministically,
   so a figure can be regenerated exactly. ProLiVis 1.0 could not do this even for its
   own author: its layout engine was an external binary that is now lost.
+- **Filters the literature** by what a publication contributed — interactions, proteins
+  touched, or method — and recomputes the method ring from what survives. The complete
+  human literature does not fit one picture; this is how you choose which part you are
+  looking at.
 - **Scores every interaction** with a documented citation-trust model: replication,
   **independent laboratories**, method diversity, assay directness, throughput,
   literature impact, currency. Unknown inputs are reported as unknown, never as zero.

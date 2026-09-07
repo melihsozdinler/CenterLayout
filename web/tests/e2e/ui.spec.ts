@@ -81,8 +81,10 @@ test('re-lays out when the aggregation threshold changes', async ({ page }) => {
   await loadThroughUi(page)
 
   const before = await page.evaluate(() => document.body.textContent ?? '')
-  await page.locator('input[type="number"]').fill('5')
-  await page.locator('input[type="number"]').blur()
+  // By name: the publication filter puts four more number inputs on this panel.
+  const fold = page.getByRole('spinbutton', { name: 'Fold methods with fewer than' })
+  await fold.fill('5')
+  await fold.blur()
 
   // The header's method count must fall as rare methods fold into one node.
   await expect

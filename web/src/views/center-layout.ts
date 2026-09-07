@@ -47,6 +47,23 @@ export interface PublicationInput {
   readonly systems: readonly string[]
   /** Interactions contributed. Determines the node's area. */
   readonly interactionCount: number
+  /** Distinct proteins this publication touched, across both sides of its records. */
+  readonly proteinCount: number
+}
+
+/**
+ * What a filter did to the literature before it was drawn.
+ *
+ * The ranges are of the *unfiltered* data, because they are what the interface offers
+ * as bounds: a control whose maximum moves as you drag it cannot be aimed.
+ */
+export interface CenterFilterSummary {
+  readonly publicationsBefore: number
+  readonly publicationsAfter: number
+  readonly interactionRange: readonly [number, number]
+  readonly proteinRange: readonly [number, number]
+  /** Methods the view was restricted to, or null for all of them. */
+  readonly systems: readonly string[] | null
 }
 
 export interface CenterLayoutInput {
@@ -153,6 +170,12 @@ export interface CenterLayoutResult {
   readonly sectors: readonly LayoutSector[]
   /** Radius of the smallest circle containing every node, for framing the view. */
   readonly extent: number
+  /**
+   * What the filters kept, when the input came from a filtered query. Attached by the
+   * caller that ran the query — the layout itself knows nothing about filtering, but
+   * the interface has to be able to say "412 of 1,688 publications".
+   */
+  readonly filter?: CenterFilterSummary
 }
 
 /** The synthetic node standing in for the long tail of rare methods. */
@@ -512,6 +535,12 @@ function placePublications(
     // Capacity grows with radius: an outer row spans a longer arc than an inner one,
     // so it holds more publications. Ignoring that wastes the outer band and forces
     // far more rows than necessary.
+    //
+    // The band is bounded, so a sector with more publications than its rows can hold
+    // keeps the busiest and leaves the rest undrawn — 41,218 human publications do not
+    // fit legibly under any spacing. They are ordered by contribution above, so what
+    // is dropped is the smallest contributors, and the interface reports the shortfall
+    // rather than letting the picture quietly stand for a literature it is not showing.
     let placed = 0
     for (let row = 0; row < rows && placed < targets.length; row += 1) {
       const distance = o.publicationRingRadius + row * spacing

@@ -631,7 +631,10 @@ export const api: ProLiVisApi = {
 
   async centerLayout(query, options) {
     const input = await buildCenterGraph(await getEngine(), query)
-    return centerLayout(input, options ?? {})
+    // The layout is a pure function of its input and knows nothing about filtering;
+    // what the filter kept travels alongside the result, so the interface can report
+    // it without running the query again.
+    return { ...centerLayout(input, options ?? {}), filter: input.filter }
   },
 
   centerScene: (layout, options) => centerScene(layout, options ?? {}),

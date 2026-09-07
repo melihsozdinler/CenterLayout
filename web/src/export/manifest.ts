@@ -43,6 +43,13 @@ export interface SessionManifest {
     readonly constants: Record<string, number>
   } | null
   readonly layout: CenterLayoutOptions | null
+  /**
+   * Which publications the center layout was drawing, when it was filtered. Part of
+   * the figure: the same dataset, organism and layout options over a filtered
+   * literature produce a different picture, so a manifest without this would
+   * reproduce the wrong one.
+   */
+  readonly publicationFilter: PublicationFilter | null
   readonly organismId: number | null
   /** Free-text note from the user, e.g. what the figure is meant to show. */
   readonly note: string | null
@@ -53,11 +60,21 @@ export interface SessionManifest {
   readonly createdAt: string | null
 }
 
+/** Bounds on the publications drawn; omitted keys mean no bound on that side. */
+export interface PublicationFilter {
+  readonly minInteractions?: number
+  readonly maxInteractions?: number
+  readonly minProteins?: number
+  readonly maxProteins?: number
+  readonly systems?: readonly string[]
+}
+
 export interface BuildManifestInput {
   readonly dataset: DatasetSummary
   readonly query?: EvidenceQuery
   readonly trust?: TrustConfig
   readonly layout?: CenterLayoutOptions
+  readonly publicationFilter?: PublicationFilter
   readonly organismId?: number
   readonly note?: string
   readonly createdAt?: string
@@ -87,6 +104,7 @@ export function buildManifest(input: BuildManifestInput): SessionManifest {
         }
       : null,
     layout: input.layout ?? null,
+    publicationFilter: input.publicationFilter ?? null,
     organismId: input.organismId ?? null,
     note: input.note ?? null,
     createdAt: input.createdAt ?? null,

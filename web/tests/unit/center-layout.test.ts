@@ -22,7 +22,15 @@ const publication = (
   systems: string[],
   interactionCount = 5,
   year: number | null = 2015,
-): PublicationInput => ({ key, label: `${key} (${year ?? '?'})`, systems, interactionCount, year })
+  proteinCount = interactionCount + 1,
+): PublicationInput => ({
+  key,
+  label: `${key} (${year ?? '?'})`,
+  systems,
+  interactionCount,
+  proteinCount,
+  year,
+})
 
 /** A small but representative literature: three methods, seven publications. */
 function sample(): CenterLayoutInput {
@@ -359,5 +367,49 @@ describe('degenerate inputs', () => {
     })
     const orphan = result.nodes.find((n) => n.id === 'pub:orphan')
     expect(orphan).toBeDefined()
+  })
+})
+
+describe('a literature larger than the band', () => {
+  /**
+   * `count` publications spread over `methods` methods, in descending contribution.
+   *
+   * Several methods, because that is the real shape: each sector owns a slice of the
+   * circle, and a narrow slice holds far fewer publications per row than the whole
+   * circle would.
+   */
+  const crowd = (count: number, methods = 20): CenterLayoutInput => {
+    const names = Array.from({ length: methods }, (_, i) => `Method ${i}`)
+    return {
+      organismLabel: 'Homo sapiens',
+      systems: names.map((name) =>
+        system(name, Math.round(count / methods), Math.round(count / methods) * 10),
+      ),
+      publications: Array.from({ length: count }, (_, i) =>
+        publication(`p${String(i).padStart(5, '0')}`, [names[i % methods]!], count - i),
+      ),
+    }
+  }
+
+  it('keeps the biggest contributors and drops the rest', () => {
+    // The band is bounded on purpose — 41,218 human publications do not fit legibly
+    // under any spacing — so this documents what happens instead of pretending it
+    // cannot. What is dropped must be the smallest contributors, not an arbitrary
+    // slice, or the picture would misrepresent the field.
+    const layout = centerLayout(crowd(40_000), {})
+    const drawn = layout.nodes.filter((n) => n.kind === 'publication')
+
+    expect(drawn.length).toBeLessThan(40_000)
+    expect(drawn.length).toBeGreaterThan(100)
+
+    const keys = new Set(drawn.map((n) => n.id.replace(/^pub:/, '')))
+    // p00000 contributes the most, p39999 the least.
+    expect(keys.has('p00000')).toBe(true)
+    expect(keys.has('p39999')).toBe(false)
+  })
+
+  it('draws everything when the literature fits', () => {
+    const layout = centerLayout(crowd(40), {})
+    expect(layout.nodes.filter((n) => n.kind === 'publication')).toHaveLength(40)
   })
 })

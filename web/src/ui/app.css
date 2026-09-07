@@ -868,3 +868,83 @@ button.link {
   margin-top: 8px;
   align-self: flex-start;
 }
+
+.panel.filter h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.bound {
+  margin: 8px 0;
+}
+
+.bound-label {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.bound-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bound-inputs input {
+  width: 100%;
+  min-width: 0;
+}
+
+.bound-inputs span {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.bound .hint {
+  margin: 2px 0 0;
+}
+
+.method-filter {
+  margin-top: 10px;
+}
+
+.method-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.method-list {
+  list-style: none;
+  margin: 4px 0 2px;
+  padding: 0;
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.method-list li {
+  padding: 2px 6px;
+}
+
+.method-list .checkbox {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.method-list .genetic {
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+.hint.warn {
+  color: var(--warn-fg, #8a5a00);
+}
