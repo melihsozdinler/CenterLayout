@@ -9,11 +9,16 @@ what to do once a dataset is loaded.
 | --- | --- |
 | **Center layout** | Which methods does this literature use, and who used them? |
 | **Adjacency matrix** | What does the whole network look like without a hairball? |
-| **UpSet** | Which combinations of methods actually co-occur? |
-| **Bipartite** | Which proteins did each publication actually touch? |
-| **Timeline** | *When* did we come to believe this? |
-| **Chord** | Which methods tend to support the same interactions? |
+| **UpSet** ᴬ | Which combinations of methods actually co-occur? |
+| **Bipartite** ᴬ | Which proteins did each publication actually touch? |
+| **Timeline** ᴬ | *When* did we come to believe this? |
+| **Chord** ᴬ | Which methods tend to support the same interactions? |
 | **High-level graph** | What are the modules, and how much evidence connects them? |
+
+ᴬ Computed through the scripting API (`prolivis.upset`, `prolivis.bipartite`,
+`prolivis.timeline`, `prolivis.methodChord`, with `prolivis.pairSystems`,
+`prolivis.timelineRecords` and `prolivis.bipartiteInput` to build their inputs) but not
+yet drawn in the interface. `paper/supplement.pdf` shows what they return.
 
 ### Center layout
 

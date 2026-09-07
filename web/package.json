@@ -19,7 +19,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "figures": "playwright test --config playwright.figures.config.ts figures.spec",
-    "screenshots": "playwright test --config playwright.figures.config.ts screenshots"
+    "screenshots": "playwright test --config playwright.figures.config.ts screenshots",
+    "supplement": "playwright test --config playwright.figures.config.ts supplement"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.0",

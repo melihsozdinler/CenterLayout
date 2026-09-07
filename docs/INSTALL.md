@@ -156,7 +156,9 @@ opens immediately — which is why the app asks you to notice if storage is unav
 To query BioGRID directly instead of downloading a file, you need a free access key.
 
 1. Register at <https://webservice.thebiogrid.org>. They email you a 32-character key.
-2. In ProLiVis, paste it into the online-mode panel.
+2. Pass it to `prolivis.connect('<key>')` in the browser console, then
+   `prolivis.fetchRemote({ geneList: ['TP53'], organismId: 9606 })`. Online mode has no
+   panel in the interface yet; it is API-only.
 
 The key is stored in your browser's local storage and is sent only to thebiogrid.org.
 It is never transmitted anywhere else and is not part of any export or manifest.

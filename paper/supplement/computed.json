@@ -1,0 +1,172 @@
+{
+  "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+  "release": "5.0.260",
+  "datasetId": "ds1_4gi0sn",
+  "interactions": 34540,
+  "upset": [
+    {
+      "systems": [
+        "Proximity Label-MS"
+      ],
+      "count": 15456
+    },
+    {
+      "systems": [
+        "Affinity Capture-MS"
+      ],
+      "count": 8124
+    },
+    {
+      "systems": [
+        "Affinity Capture-MS",
+        "Proximity Label-MS"
+      ],
+      "count": 3779
+    },
+    {
+      "systems": [
+        "Co-fractionation"
+      ],
+      "count": 1684
+    },
+    {
+      "systems": [
+        "Protein-RNA"
+      ],
+      "count": 1013
+    },
+    {
+      "systems": [
+        "Affinity Capture-RNA"
+      ],
+      "count": 512
+    },
+    {
+      "systems": [
+        "Protein-peptide"
+      ],
+      "count": 480
+    },
+    {
+      "systems": [
+        "PCA"
+      ],
+      "count": 378
+    }
+  ],
+  "timeline": [
+    {
+      "system": "Proximity Label-MS",
+      "total": 26776,
+      "peakYear": 2020
+    },
+    {
+      "system": "Affinity Capture-MS",
+      "total": 16970,
+      "peakYear": 2021
+    },
+    {
+      "system": "Co-fractionation",
+      "total": 2027,
+      "peakYear": 2025
+    },
+    {
+      "system": "Protein-RNA",
+      "total": 1650,
+      "peakYear": 2023
+    },
+    {
+      "system": "Affinity Capture-RNA",
+      "total": 1614,
+      "peakYear": 2023
+    },
+    {
+      "system": "Reconstituted Complex",
+      "total": 1361,
+      "peakYear": 2021
+    }
+  ],
+  "years": [
+    2004,
+    2025
+  ],
+  "stale": 0,
+  "chord": [
+    {
+      "source": "Affinity Capture-MS",
+      "target": "Proximity Label-MS",
+      "value": 4243
+    },
+    {
+      "source": "Affinity Capture-MS",
+      "target": "Protein-RNA",
+      "value": 365
+    },
+    {
+      "source": "Affinity Capture-MS",
+      "target": "Co-fractionation",
+      "value": 263
+    },
+    {
+      "source": "Affinity Capture-MS",
+      "target": "Affinity Capture-Western",
+      "value": 243
+    },
+    {
+      "source": "Protein-RNA",
+      "target": "Proximity Label-MS",
+      "value": 222
+    },
+    {
+      "source": "Affinity Capture-MS",
+      "target": "Affinity Capture-RNA",
+      "value": 221
+    },
+    {
+      "source": "Affinity Capture-MS",
+      "target": "Two-hybrid",
+      "value": 192
+    },
+    {
+      "source": "Co-fractionation",
+      "target": "Proximity Label-MS",
+      "value": 174
+    }
+  ],
+  "bipartite": {
+    "nodes": 212,
+    "links": 1511,
+    "lanes": [
+      "Proximity Label-MS",
+      "Affinity Capture-MS",
+      "Protein-RNA"
+    ],
+    "truncated": true
+  },
+  "graph": {
+    "nodes": 8510,
+    "edges": 34540
+  },
+  "cliques": 5000,
+  "presets": [
+    "literature-aware",
+    "evidence-only",
+    "structural-strict"
+  ],
+  "exports": {
+    "csv": "pair_key,gene_a,gene_b,biogrid_id_a,biogrid_id_b,trust_score,trust_coverage,evidence_type,term_replication,term_independence,term_method_diversity,term_method_weight,term_throughput,term_literature_impact,term_currency",
+    "sif": [
+      "ACE2\ttrust5of5\tS",
+      "G3BP1\ttrust5of5\tN",
+      ""
+    ]
+  },
+  "state": {
+    "views": [
+      "center",
+      "network",
+      "matrix"
+    ],
+    "active": "center"
+  }
+}

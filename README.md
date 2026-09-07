@@ -109,11 +109,13 @@ from a BioGRID release. Counts are in
   and remembering which publications produced it.
 - **Compares and merges** datasets across organisms, releases or queries, keeping
   per-edge provenance.
-- **Six more views**: adjacency matrix, UpSet of method combinations, bipartite
-  publication↔protein with method lanes, literature timeline, method chord, and the
-  protein-level network with force, layered, grouped, circular and ego arrangements.
-- **Exports** to CSV/TSV, GraphML, GML, SIF (Cytoscape) and SVG, plus a session manifest
-  that reproduces any figure.
+- **More views**: the adjacency matrix, and the protein-level network with force,
+  layered, grouped, circular and ego arrangements. UpSet of method combinations,
+  bipartite publication↔protein with method lanes, literature timeline and method chord
+  are computed through the API but not yet drawn in the interface — see the
+  [supplement](paper/supplement.pdf) for their output.
+- **Exports** the figure as SVG from the interface, and to CSV/TSV, GraphML, GML and
+  SIF (Cytoscape) through the API, plus a session manifest that reproduces any figure.
 
 **Your data stays on your machine.** Bulk dumps are parsed and queried locally in the
 browser. Nothing is uploaded; the network is touched only if you turn on online mode or
@@ -149,6 +151,7 @@ Then get the data from <https://downloads.thebiogrid.org/BioGRID>. Start with
 | [`docs/DATA.md`](docs/DATA.md) | Schema, and three things about BioGRID worth knowing |
 | [`docs/ALGORITHMS.md`](docs/ALGORITHMS.md) | What each algorithm computes and what it costs |
 | [`paper/`](paper/) | The 2.0 manuscript, its figures, and how both are generated |
+| [`paper/supplement.pdf`](paper/supplement.pdf) | Every capability, with a figure each, and where each one lives |
 
 Everything the interface does is also available as `window.prolivis` in the browser
 console — a supported interface, not a debugging hook. The tool's own tests and every

@@ -49,7 +49,8 @@ export interface EvidenceQuery {
   readonly limit?: number
 }
 
-function whereClause(query: EvidenceQuery, alias = 'i'): string {
+/** Shared with the view-data queries, so every view answers the same question. */
+export function whereClause(query: EvidenceQuery, alias = 'i'): string {
   const parts = [`${alias}.dataset_id = ${sqlString(query.datasetId)}`, `${alias}.pair_key IS NOT NULL`]
   if (query.organismId !== undefined) {
     parts.push(

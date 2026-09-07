@@ -54,6 +54,12 @@ import {
   type ScoredPair,
 } from './trust/score'
 import { buildCenterGraph, type CenterGraphQuery } from './views/center-graph'
+import {
+  bipartiteInput,
+  pairSystems,
+  timelineRecords,
+  type BipartiteQueryOptions,
+} from './model/viewdata'
 import { PpiGraph } from './algo/graph'
 import {
   findProteins,
@@ -330,6 +336,19 @@ export interface ProLiVisApi {
    * Which combinations of experimental methods actually co-occur. A Venn diagram
    * cannot show more than four sets; this shows all of them.
    */
+  /**
+   * Which experimental systems support each interaction — the input `upset` and
+   * `methodChord` take. Without this the two view models could not be built from a
+   * dataset at all.
+   */
+  pairSystems(query: EvidenceQuery): Promise<PairSystems[]>
+  /** One row per interaction, publication and method: the input `timeline` takes. */
+  timelineRecords(query: EvidenceQuery): Promise<TimelineRecord[]>
+  /** Publications, the proteins they touched, and the links: the input `bipartite` takes. */
+  bipartiteInput(
+    query: EvidenceQuery,
+    options?: BipartiteQueryOptions,
+  ): Promise<BipartiteInput>
   upset(pairs: readonly PairSystems[], options?: { maxIntersections?: number; minCount?: number }): UpSetView
   /**
    * Lay out the protein-protein network itself. Deterministic in every mode: the
@@ -683,6 +702,18 @@ export const api: ProLiVisApi = {
   matrixScene: (matrix, options) => matrixScene(matrix, options ?? {}),
 
   matrix: (pairs, options) => buildMatrix(pairs, options ?? {}),
+
+  async pairSystems(query) {
+    return pairSystems(await getEngine(), query)
+  },
+
+  async timelineRecords(query) {
+    return timelineRecords(await getEngine(), query)
+  },
+
+  async bipartiteInput(query, options) {
+    return bipartiteInput(await getEngine(), query, options ?? {})
+  },
 
   upset: (pairs, options) => buildUpSet(pairs, options ?? {}),
 

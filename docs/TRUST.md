@@ -164,7 +164,9 @@ coverage, and the file says so.
   being decorative, while remaining a combination of seven terms rather than a proxy
   for directness alone.
 
-Weights are editable in the interface and in the API. They are normalized to sum to
+Weights are editable through the API — `prolivis.gather` once, then `prolivis.rescore`
+under any configuration. The interface offers the trust threshold and the shipped
+presets' behaviour, not a weight editor. They are normalized to sum to
 one, so a hand-edited configuration still behaves.
 
 ---
