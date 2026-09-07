@@ -118,7 +118,9 @@ paper removes.
         clustering the supporting publications over shared institutional identifiers.
   \item A deterministic center layout (\S\ref{sec:layout}) in which angular position
         encodes experimental method and radial position encodes hierarchy level, with
-        closed-form placement and no iterative relaxation.
+        closed-form placement and no iterative relaxation; and filters over the
+        literature it draws --- contribution, proteins touched, method --- which
+        recompute the method ring from the publications that survive.
   \item Structural extraction under an evidence threshold (\S\ref{sec:structure}),
         including edge removal in ascending order of trust, which asks what network
         structure survives if only well-supported interactions are believed.
@@ -270,6 +272,36 @@ letting rows march outward without bound causes a method with a thousand publica
 to push its fan to several times the method ring's radius, collapsing every other method
 into an unreadable sliver.
 
+\subsection{Filtering the literature}
+\label{sec:filter}
+
+The band is bounded, so a literature larger than it holds is not drawn in full. In
+release 5.0.260 the human literature is \HumanPublications{} publications, of which
+\HumanPublicationsDrawn{} fit; the rest are omitted in ascending order of contribution.
+No spacing draws forty thousand labelled nodes legibly, so the question is not whether
+to omit but how the omission is chosen and whether the reader is told. Ours keeps the
+largest contributors, and the interface reports what it drew against what exists.
+
+The reader's own answer is to say which part of the literature they mean. Every
+publication is one node here whatever it reported, and the quantity that separates a
+screen from a structure paper is not on the page, so we filter on it directly: the
+interactions a publication contributed, the distinct proteins it touched, and the
+methods it used. The first two are not interchangeable --- ten interactions among three
+proteins is a complex, ten among twenty is a screen --- and publications with identical
+interaction counts routinely differ in protein count, so both are offered.
+
+Filtering recomputes the method ring over the surviving publications rather than the
+whole dataset. A sector's width is its share of the literature; a sector sized by papers
+that are no longer drawn would describe a picture other than the one on screen. The
+filter is recorded in the session manifest for the same reason: without it the manifest
+would faithfully reproduce a different figure.
+
+Figure~\ref{fig:screens} is the human literature restricted to publications
+contributing at least \ScreenCut{} interactions --- \ScreenPublications{} of the
+\HumanPublications{}, across \ScreenMethods{} of the \HumanMethods{} methods. It is the
+same layout, the same organism and the same options as the unreadable whole.
+
+
 \paragraph{Determinism.} Inputs are sorted canonically, ties break on identifier, and no
 random source or clock is consulted; string comparison is explicitly locale-independent,
 since \texttt{localeCompare} would otherwise permit two machines to order method names
@@ -287,6 +319,18 @@ $O(n \log n)$, dominated by the sort.
   are where most \emph{papers} are, while the largest nodes (Affinity Capture-MS,
   Proximity Label-MS) are where most \emph{interactions} are.}
   \label{fig:center}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.60\textwidth]{figures/center-human-screens.pdf}
+  \caption{The human literature of BioGRID 5.0.260 filtered to the
+  \ScreenPublications{} publications contributing at least \ScreenCut{} interactions
+  each, drawn across \ScreenMethods{} methods. Unfiltered the same view holds
+  \HumanPublications{} publications, of which \HumanPublicationsDrawn{} fit the band ---
+  a picture in which no individual paper can be found. Publication labels are omitted
+  here; at this count they collide.}
+  \label{fig:screens}
 \end{figure*}
 
 \section{Structural extraction under an evidence threshold}
@@ -464,6 +508,15 @@ well-studied ones --- human, yeast, mouse, fly, \emph{E.~coli}, \emph{Arabidopsi
 have a core that is biconnected by construction, and only modularity divides them. A
 tool that offered biconnected components alone would work on the organisms nobody
 needs help reading.
+
+\paragraph{Filtering a literature too large to draw.} The human literature of release
+5.0.260 comprises \HumanPublications{} publications across \HumanMethods{} methods, the
+largest contributing \HumanBiggestPublication{} interactions on its own;
+\HumanPublicationsDrawn{} of them fit the publication band. Restricting to publications
+contributing at least \ScreenCut{} interactions leaves \ScreenPublications{} across
+\ScreenMethods{} methods (Figure~\ref{fig:screens}), a picture in which individual
+screens are identifiable. The filtered query costs 2.2\,s over the full release,
+recomputing the method ring included.
 
 \paragraph{Evidence structure.} Restricted to SARS-CoV-2 in release 5.0.260, the
 physical network has \CovProteins{} proteins and \CovInteractions{} interactions in

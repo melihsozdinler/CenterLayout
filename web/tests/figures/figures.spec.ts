@@ -350,6 +350,57 @@ test('generate high-level figures', async ({ page }) => {
   )
   writeFileSync(resolve(OUTPUT, 'drilldown.tex'), descentTable(descent), 'utf8')
 
+  // The center layout at organism scale, and what filtering does to it. Produced here
+  // rather than in its own test because the full release is already ingested in this
+  // page, and re-ingesting it costs eighty seconds.
+  const centre = await page.evaluate(
+    async ({ id, organismId }) => {
+      const query = { datasetId: id, organismId }
+      const unfiltered = await window.prolivis!.centerLayout(query, { aggregateBelow: 0 })
+      const distinct = (layout: typeof unfiltered) =>
+        new Set(
+          layout.nodes
+            .filter((n) => n.kind === 'publication')
+            .map((n) => n.id.split('@')[0]),
+        ).size
+
+      const CUT = 500
+      const filtered = await window.prolivis!.centerLayout(
+        { ...query, minInteractions: CUT },
+        { aggregateBelow: 0 },
+      )
+      // Method labels, not publication labels: at three hundred publications the
+      // names collide into a grey band, and what this figure is for is the shape —
+      // which methods the biggest contributors used.
+      const scene = window.prolivis!.centerScene(filtered, {
+        labelPublicationsBelow: 0,
+      })
+
+      return {
+        cut: CUT,
+        publications: unfiltered.filter!.publicationsBefore,
+        drawn: distinct(unfiltered),
+        methods: unfiltered.sectors.length,
+        screens: filtered.filter!.publicationsAfter,
+        screenMethods: filtered.sectors.length,
+        biggest: unfiltered.filter!.interactionRange[1],
+        svg: window.prolivis!.toSvg(
+          scene,
+          `Publications contributing at least ${CUT} interactions`,
+        ),
+      }
+    },
+    { id: dataset.datasetId, organismId: organism.organismId },
+  )
+
+  writeFileSync(resolve(OUTPUT, 'center-human-screens.svg'), centre.svg, 'utf8')
+  console.log(
+    `  centre layout: ${centre.publications.toLocaleString()} publications, ` +
+      `${centre.drawn.toLocaleString()} fit the band; ` +
+      `${centre.screens.toLocaleString()} contribute >= ${centre.cut} interactions ` +
+      `across ${centre.screenMethods} methods`,
+  )
+
   // Which grouping each organism's network actually needs. This is a result rather
   // than a detail: it says how often the structural decomposition is the right level
   // to read a PPI network at, and the answer is "when nobody has studied it much yet".
@@ -383,6 +434,13 @@ test('generate high-level figures', async ({ page }) => {
         .toFixed(1)}}`,
       `\\newcommand{\\OrganismsSurveyed}{${groupings.length}}`,
       `\\newcommand{\\OrganismsStructural}{${structural.length}}`,
+      `\\newcommand{\\HumanPublications}{${tex(centre.publications)}}`,
+      `\\newcommand{\\HumanPublicationsDrawn}{${tex(centre.drawn)}}`,
+      `\\newcommand{\\HumanMethods}{${centre.methods}}`,
+      `\\newcommand{\\HumanBiggestPublication}{${tex(centre.biggest)}}`,
+      `\\newcommand{\\ScreenCut}{${tex(centre.cut)}}`,
+      `\\newcommand{\\ScreenPublications}{${tex(centre.screens)}}`,
+      `\\newcommand{\\ScreenMethods}{${centre.screenMethods}}`,
       '',
     ].join('\n'),
     'utf8',
