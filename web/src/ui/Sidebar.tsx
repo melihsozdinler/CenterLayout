@@ -220,7 +220,7 @@ export function Sidebar() {
                   }
                 >
                   <option value="trust">Trust</option>
-                  <option value="module">Connected module</option>
+                  <option value="module">Community</option>
                   <option value="degree">Number of partners</option>
                 </select>
               </label>

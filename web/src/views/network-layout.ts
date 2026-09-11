@@ -5,8 +5,9 @@
  * because no single one is right for a PPI network at every size:
  *
  *   - `force`   — the familiar spring embedding. Best under a few thousand nodes.
- *   - `grouped` — modules on a ring, members within each. Scales further and makes
- *                 module structure explicit rather than hoping it emerges.
+ *   - `grouped` — trust-weighted communities on a ring, members within each. Scales
+ *                 further and makes module structure explicit rather than hoping it
+ *                 emerges.
  *   - `circular` — everything on one ring, ordered so neighbours are adjacent. Honest
  *                 about being a reference view rather than a picture of structure.
  *
@@ -18,6 +19,7 @@
 
 import type { PpiGraph } from '../algo/graph'
 import { connectedComponents } from '../algo/structure'
+import { louvain } from '../algo/community'
 
 export type NetworkLayoutMode = 'force' | 'grouped' | 'circular' | 'ego' | 'layered'
 
@@ -30,7 +32,7 @@ export interface NetworkLayoutOptions {
   readonly radius?: number
   /** Pull toward the centre; higher values make a tighter ball. */
   readonly gravity?: number
-  /** Group index per node, for `grouped`. Defaults to connected components. */
+  /** Group index per node, for `grouped`. Defaults to trust-weighted communities. */
   readonly groups?: readonly number[]
   /**
    * Dense index of the protein to centre an `ego` layout on. Its partners form the
@@ -90,8 +92,12 @@ export function networkLayout(
   const o = { ...DEFAULTS, ...options }
   const n = graph.order
 
-  const groups =
-    o.groups ?? [...connectedComponents(graph).componentOf]
+  // Communities, not connected components. A PPI network is one giant component, so
+  // grouping by component put every protein in a single group and drew one disc —
+  // which is also what the force layout fell back to above its size cap, so the two
+  // buttons produced the same picture. Trust-weighted communities are what "grouped"
+  // promises: modules held together by evidence.
+  const groups = o.groups ?? [...louvain(graph).communityOf]
   const groupCount = new Set(groups).size
 
   // Force is only used where it can say something; beyond that the grouped
@@ -114,8 +120,8 @@ export function networkLayout(
           : mode === 'circular'
             ? circularPositions(graph, o.radius)
             : mode === 'grouped'
-              ? groupedPositions(graph, groups, o.radius)
-              : forcePositions(graph, o)
+              ? groupedPositions(graph, groups)
+              : forceByComponent(graph, o)
 
   const nodes: NetworkNode[] = graph.nodes.map((node, index) => ({
     index,
@@ -407,16 +413,12 @@ function circularPositions(graph: PpiGraph, radius: number) {
 }
 
 /**
- * Modules on a ring, members packed inside each.
+ * Communities as discs, packed around the largest, members arranged inside each.
  *
  * Makes module structure explicit rather than hoping a force layout reveals it, and
  * stays legible at sizes where a spring embedding turns into a single blob.
  */
-function groupedPositions(
-  graph: PpiGraph,
-  groups: readonly number[],
-  radius: number,
-) {
+function groupedPositions(graph: PpiGraph, groups: readonly number[]) {
   const members = new Map<number, number[]>()
   groups.forEach((group, node) => {
     const list = members.get(group)
@@ -431,17 +433,19 @@ function groupedPositions(
 
   const x = new Float64Array(graph.order)
   const y = new Float64Array(graph.order)
-  const total = ordered.reduce((sum, [, list]) => sum + list.length, 0) || 1
 
-  let angleCursor = -Math.PI / 2
-  for (const [, list] of ordered) {
-    const share = list.length / total
-    const sectorWidth = Math.max(share * Math.PI * 2, 0.05)
-    const centreAngle = angleCursor + sectorWidth / 2
-    // Group radius grows with membership so dense modules are not overdrawn.
-    const groupRadius = 18 + 14 * Math.sqrt(list.length)
-    const cx = Math.cos(centreAngle) * radius
-    const cy = Math.sin(centreAngle) * radius
+  // Group radius grows with membership so dense modules are not overdrawn.
+  const groupRadius = (size: number) => 18 + 14 * Math.sqrt(size)
+
+  // Packed rather than spaced around a fixed ring. A ring of fixed radius sized each
+  // sector by share, which let a large community's disc run over its neighbours' —
+  // communities drawn on top of each other are not communities anyone can read. The
+  // packer guarantees no two discs overlap, and puts the largest at the centre.
+  const centres = packDiscs(ordered.map(([, list]) => groupRadius(list.length) + NODE_MARGIN))
+
+  for (const [position, [, list]] of ordered.entries()) {
+    const { x: cx, y: cy } = centres[position]!
+    const radius = groupRadius(list.length)
 
     const sorted = [...list].sort((a, b) => graph.degree(b) - graph.degree(a) || a - b)
     sorted.forEach((node, index) => {
@@ -455,21 +459,178 @@ function groupedPositions(
       const inRing = Math.max(1, 2 * ring + 1)
       const positionInRing = index - ring * ring
       const angle = (positionInRing / inRing) * Math.PI * 2
-      const r = (ring / Math.sqrt(sorted.length)) * groupRadius
+      const r = (ring / Math.sqrt(sorted.length)) * radius
       x[node] = cx + Math.cos(angle) * r
       y[node] = cy + Math.sin(angle) * r
     })
-    angleCursor += sectorWidth
   }
   return { x, y }
 }
 
 /**
- * Largest graph a force layout is used on. Above this the picture stops conveying
- * structure long before it stops computing, and `networkLayout` falls back to the
- * grouped arrangement rather than drawing a blob.
+ * The force layout, one connected component at a time, then packed.
+ *
+ * A component with no edge to the rest feels only repulsion from it, so under a
+ * single embedding it drifts outward until gravity balances — far outside the main
+ * component. Fitting the view to include it then shrinks everything else, which on a
+ * sparse network means the picture is mostly empty canvas with the interesting part
+ * reduced to a smudge in the middle.
+ *
+ * So each component gets its own embedding, sized by its share of the proteins so the
+ * density is the same throughout, and the components are packed: the largest at the
+ * centre, the rest in rings around it, largest first, each one placed where it fits.
+ * Distance between components now means nothing — which is honest, because there is
+ * no interaction between them for it to mean anything about.
+ *
+ * A single-component graph is laid out exactly as before.
  */
-export const MAX_FORCE_NODES = 1200
+function forceByComponent(
+  graph: PpiGraph,
+  o: Required<Pick<NetworkLayoutOptions, 'iterations' | 'seed' | 'radius' | 'gravity'>>,
+) {
+  const components = connectedComponents(graph)
+  if (components.count <= 1) return forcePositions(graph, o)
+
+  const n = graph.order
+  const x = new Float64Array(n)
+  const y = new Float64Array(n)
+
+  // Each component laid out on its own, centred on its own origin.
+  const pieces = components.members.map((members) => {
+    if (members.length === 1) {
+      return { members, px: [0], py: [0], reach: NODE_MARGIN }
+    }
+    const keep = new Set(members)
+    const sub = graph.induced(keep)
+    const local = forcePositions(sub, {
+      ...o,
+      // Radius with the square root of the share, so area is proportional to size and
+      // a two-protein component is not drawn at the scale of the whole network.
+      radius: Math.max(NODE_MARGIN * 2, o.radius * Math.sqrt(members.length / n)),
+    })
+    // Map back to this graph's indices by protein id: `induced` re-indexes densely.
+    const px: number[] = []
+    const py: number[] = []
+    const order: number[] = []
+    let sx = 0
+    let sy = 0
+    for (let j = 0; j < sub.order; j += 1) {
+      const index = graph.index(sub.nodes[j]!.id)
+      if (index === undefined) continue
+      order.push(index)
+      px.push(local.x[j]!)
+      py.push(local.y[j]!)
+      sx += local.x[j]!
+      sy += local.y[j]!
+    }
+    // Recentre on the centroid, so the packing below places what it thinks it places.
+    const mx = sx / Math.max(1, px.length)
+    const my = sy / Math.max(1, py.length)
+    let reach = NODE_MARGIN
+    for (let j = 0; j < px.length; j += 1) {
+      px[j] = px[j]! - mx
+      py[j] = py[j]! - my
+      reach = Math.max(reach, Math.hypot(px[j]!, py[j]!) + NODE_MARGIN)
+    }
+    return { members: order, px, py, reach }
+  })
+
+  const centres = packDiscs(pieces.map((piece) => piece.reach))
+  pieces.forEach((piece, c) => {
+    const centre = centres[c]!
+    piece.members.forEach((index, j) => {
+      x[index] = centre.x + piece.px[j]!
+      y[index] = centre.y + piece.py[j]!
+    })
+  })
+  return { x, y }
+}
+
+/** Clearance around a node, and between packed components. */
+const NODE_MARGIN = 14
+
+/**
+ * Place discs of the given radii without overlap: the first at the origin, the rest on
+ * rings around it, in the order given (largest first), each ring filled before the
+ * next is started. Deterministic and O(n) in the number of discs.
+ *
+ * Each ring's discs are spread evenly around it. Packed from twelve o'clock instead,
+ * a handful of small components filled a third of the ring and read as a tail hanging
+ * off one side of the network — a shape that means nothing, since there is no
+ * interaction between components for their placement to describe.
+ */
+export function packDiscs(radii: readonly number[]): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = radii.map(() => ({ x: 0, y: 0 }))
+  if (radii.length <= 1) return out
+
+  const gap = NODE_MARGIN
+  // First assign discs to rings, then place each ring's discs.
+  const rings: { radius: number; members: { index: number; need: number }[] }[] = []
+  let inner = radii[0]! + gap // Everything placed so far lies within this radius.
+  let current: (typeof rings)[number] | null = null
+  let used = 0
+  let width = 0
+
+  for (let i = 1; i < radii.length; i += 1) {
+    const r = radii[i]!
+    for (;;) {
+      if (current === null) {
+        current = { radius: inner + r, members: [] }
+        rings.push(current)
+        used = 0
+        width = r
+      }
+      // Angle this disc needs on the ring: the chord of its diameter, plus a gap.
+      const need = 2 * Math.asin(Math.min(1, (r + gap / 2) / current.radius))
+      if (used + need <= Math.PI * 2 - 1e-9 || current.members.length === 0) {
+        current.members.push({ index: i, need })
+        used += need
+        width = Math.max(width, r)
+        break
+      }
+      // Ring full: the next starts outside everything on this one.
+      inner = current.radius + width + gap
+      current = null
+    }
+  }
+
+  for (const ring of rings) {
+    const total = ring.members.reduce((sum, m) => sum + m.need, 0)
+    // Spare arc shared equally between the discs, so the ring is balanced.
+    const spare = Math.max(0, Math.PI * 2 - total) / ring.members.length
+    let angle = -Math.PI / 2
+    for (const member of ring.members) {
+      const at = angle + member.need / 2
+      out[member.index] = { x: Math.cos(at) * ring.radius, y: Math.sin(at) * ring.radius }
+      angle += member.need + spare
+    }
+  }
+  return out
+}
+
+/**
+ * Largest graph a force layout is used on; above it `networkLayout` falls back to the
+ * grouped arrangement.
+ *
+ * This was 1,200 while repulsion was exact, and at default settings a coronavirus
+ * organism is 1,800 proteins — so pressing Force drew Grouped, and nobody could tell
+ * why the two buttons looked alike. Barnes–Hut repulsion makes a few thousand nodes a
+ * second's work, so the cap now sits where the picture stops saying anything rather
+ * than where the arithmetic got slow.
+ */
+export const MAX_FORCE_NODES = 6000
+
+/**
+ * Below this, repulsion is exact. Small layouts — every figure in the paper and the
+ * supplement, and the golden tests — stay byte-identical to what they were.
+ *
+ * Measured rather than guessed: at a thousand proteins Barnes–Hut takes 0.3 s and the
+ * exact computation 1.9 s, so exact is kept only where it is cheap anyway.
+ */
+export const EXACT_REPULSION_BELOW = 300
+
+/** Barnes–Hut opening angle: a cell farther than size/θ is treated as one mass. */
+const THETA = 0.8
 
 /**
  * Fruchterman–Reingold with exact repulsion.
@@ -509,30 +670,17 @@ function forcePositions(
   const initialTemperature = o.radius / 6
   let temperature = initialTemperature
 
+  // One quadtree for the whole layout, rebuilt in place each iteration.
+  const tree = n < EXACT_REPULSION_BELOW ? null : new QuadTree(n)
+
   for (let step = 0; step < o.iterations; step += 1) {
     dx.fill(0)
     dy.fill(0)
 
-    // Repulsion between every pair, computed once per pair and applied to both.
-    for (let i = 0; i < n; i += 1) {
-      for (let j = i + 1; j < n; j += 1) {
-        let ddx = x[i]! - x[j]!
-        let ddy = y[i]! - y[j]!
-        let distance = Math.hypot(ddx, ddy)
-        if (distance < 0.01) {
-          // Coincident nodes need a nudge, and a deterministic one.
-          ddx = ((i % 7) - 3) * 0.01 + 0.001
-          ddy = ((j % 7) - 3) * 0.01 + 0.001
-          distance = Math.hypot(ddx, ddy)
-        }
-        const force = (k * k) / distance
-        const fx = (ddx / distance) * force
-        const fy = (ddy / distance) * force
-        dx[i] = dx[i]! + fx
-        dy[i] = dy[i]! + fy
-        dx[j] = dx[j]! - fx
-        dy[j] = dy[j]! - fy
-      }
+    if (tree === null) {
+      exactRepulsion(x, y, dx, dy, n, k)
+    } else {
+      barnesHutRepulsion(x, y, dx, dy, n, k, tree)
     }
 
     // Attraction along edges, weighted by trust: better-supported interactions pull
@@ -570,4 +718,275 @@ function forcePositions(
   }
 
   return { x, y }
+}
+
+/** Repulsion between every pair, computed once per pair and applied to both. */
+export function exactRepulsion(
+  x: Float64Array,
+  y: Float64Array,
+  dx: Float64Array,
+  dy: Float64Array,
+  n: number,
+  k: number,
+): void {
+  for (let i = 0; i < n; i += 1) {
+    for (let j = i + 1; j < n; j += 1) {
+      let ddx = x[i]! - x[j]!
+      let ddy = y[i]! - y[j]!
+      let distance = Math.hypot(ddx, ddy)
+      if (distance < 0.01) {
+        // Coincident nodes need a nudge, and a deterministic one.
+        ddx = ((i % 7) - 3) * 0.01 + 0.001
+        ddy = ((j % 7) - 3) * 0.01 + 0.001
+        distance = Math.hypot(ddx, ddy)
+      }
+      const force = (k * k) / distance
+      const fx = (ddx / distance) * force
+      const fy = (ddy / distance) * force
+      dx[i] = dx[i]! + fx
+      dy[i] = dy[i]! + fy
+      dx[j] = dx[j]! - fx
+      dy[j] = dy[j]! - fy
+    }
+  }
+}
+
+/**
+ * Barnes–Hut repulsion: O(n log n) per iteration instead of O(n²).
+ *
+ * A quadtree over the current positions; a cell far enough away relative to its size
+ * repels as one mass at its centre. This is the approximation that keeps long-range
+ * forces smooth. The earlier grid scheme cut them off at a cell boundary instead, gave
+ * every node the same repulsion radius, and settled into a visible lattice — which is
+ * why repulsion went exact in the first place.
+ *
+ * Built and traversed in index order with explicit stacks, so the result is
+ * deterministic and no recursion depth depends on the data. Exported so a test can hold
+ * it against the exact computation.
+ *
+ * Pass the same `tree` across iterations: a layout is two hundred and fifty of these,
+ * and allocating the quadtree afresh each time was most of the cost.
+ */
+export function barnesHutRepulsion(
+  x: Float64Array,
+  y: Float64Array,
+  dx: Float64Array,
+  dy: Float64Array,
+  n: number,
+  k: number,
+  tree: QuadTree = new QuadTree(n),
+): void {
+  tree.build(x, y, n)
+  const { mass, cx, cy, size, left, top, child, kids, point, pointCell } = tree
+  const k2 = k * k
+  const stack = tree.stack
+
+  for (let i = 0; i < n; i += 1) {
+    const xi = x[i]!
+    const yi = y[i]!
+    let fx = 0
+    let fy = 0
+
+    let depth = 0
+    stack[depth++] = 0
+    while (depth > 0) {
+      const cell = stack[--depth]!
+      const m = mass[cell]!
+      if (m === 0) continue
+
+      const leaf = kids[cell] === 0
+      if (leaf && m === 1 && point[cell] === i) continue
+
+      let ddx = xi - cx[cell]!
+      let ddy = yi - cy[cell]!
+      let distance = Math.sqrt(ddx * ddx + ddy * ddy)
+
+      // A cell containing the point itself is never summarised: its centre of mass can
+      // sit far enough away to pass the opening test, and the point would then repel
+      // itself as part of the cell.
+      const s = size[cell]!
+      const l = left[cell]!
+      const t = top[cell]!
+      const inside = xi >= l && xi < l + s && yi >= t && yi < t + s
+
+      if (leaf || (!inside && s < THETA * distance)) {
+        const others = leaf && pointCell[i] === cell ? m - 1 : m
+        if (others <= 0) continue
+        if (distance < 0.01) {
+          ddx = ((i % 7) - 3) * 0.01 + 0.001
+          ddy = ((cell % 7) - 3) * 0.01 + 0.001
+          distance = Math.sqrt(ddx * ddx + ddy * ddy)
+        }
+        const force = (others * k2) / (distance * distance)
+        fx += ddx * force
+        fy += ddy * force
+        continue
+      }
+
+      const base = cell * 4
+      for (let q = 3; q >= 0; q -= 1) {
+        const c = child[base + q]!
+        if (c !== -1) stack[depth++] = c
+      }
+    }
+
+    dx[i] = dx[i]! + fx
+    dy[i] = dy[i]! + fy
+  }
+}
+
+/** Maximum subdivision depth; points closer than this share a leaf. */
+const MAX_DEPTH = 24
+
+/**
+ * A quadtree held in typed arrays, rebuilt in place.
+ *
+ * Cells are indices; children are four slots per cell, -1 when absent. A point that
+ * reaches MAX_DEPTH shares its leaf rather than subdividing without end, which only
+ * happens for points that are, to floating-point precision, in the same place.
+ */
+export class QuadTree {
+  mass: Float64Array
+  cx: Float64Array
+  cy: Float64Array
+  size: Float64Array
+  left: Float64Array
+  top: Float64Array
+  child: Int32Array
+  /** Children present, so a leaf test is one read rather than four. */
+  kids: Uint8Array
+  /** The first point stored in a leaf, or -1. */
+  point: Int32Array
+  /** The leaf each point ended in: answers "is this point in that leaf" in O(1). */
+  pointCell: Int32Array
+  stack: Int32Array
+  private cells = 0
+
+  constructor(n: number) {
+    const capacity = Math.max(64, n * 4 + 64)
+    this.mass = new Float64Array(capacity)
+    this.cx = new Float64Array(capacity)
+    this.cy = new Float64Array(capacity)
+    this.size = new Float64Array(capacity)
+    this.left = new Float64Array(capacity)
+    this.top = new Float64Array(capacity)
+    this.child = new Int32Array(capacity * 4).fill(-1)
+    this.kids = new Uint8Array(capacity)
+    this.point = new Int32Array(capacity).fill(-1)
+    this.pointCell = new Int32Array(Math.max(1, n))
+    this.stack = new Int32Array(capacity * 4)
+  }
+
+  private grow(): void {
+    const next = this.mass.length * 2
+    const f64 = (a: Float64Array) => {
+      const b = new Float64Array(next)
+      b.set(a)
+      return b
+    }
+    this.mass = f64(this.mass)
+    this.cx = f64(this.cx)
+    this.cy = f64(this.cy)
+    this.size = f64(this.size)
+    this.left = f64(this.left)
+    this.top = f64(this.top)
+    const child = new Int32Array(next * 4).fill(-1)
+    child.set(this.child)
+    this.child = child
+    const kids = new Uint8Array(next)
+    kids.set(this.kids)
+    this.kids = kids
+    const point = new Int32Array(next).fill(-1)
+    point.set(this.point)
+    this.point = point
+    this.stack = new Int32Array(next * 4)
+  }
+
+  private makeCell(l: number, t: number, s: number): number {
+    if (this.cells >= this.mass.length) this.grow()
+    const c = this.cells
+    this.cells += 1
+    this.mass[c] = 0
+    this.cx[c] = 0
+    this.cy[c] = 0
+    this.left[c] = l
+    this.top[c] = t
+    this.size[c] = s
+    this.kids[c] = 0
+    this.point[c] = -1
+    this.child.fill(-1, c * 4, c * 4 + 4)
+    return c
+  }
+
+  build(x: Float64Array, y: Float64Array, n: number): void {
+    if (this.pointCell.length < n) this.pointCell = new Int32Array(n)
+
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (let i = 0; i < n; i += 1) {
+      const px = x[i]!
+      const py = y[i]!
+      if (px < minX) minX = px
+      if (px > maxX) maxX = px
+      if (py < minY) minY = py
+      if (py > maxY) maxY = py
+    }
+    const side = Math.max(maxX - minX, maxY - minY, 1e-6) * 1.0001
+
+    this.cells = 0
+    this.makeCell(minX, minY, side)
+
+    for (let i = 0; i < n; i += 1) {
+      const px = x[i]!
+      const py = y[i]!
+      let cell = 0
+      for (let depth = 0; ; depth += 1) {
+        const m = this.mass[cell]!
+        this.cx[cell] = (this.cx[cell]! * m + px) / (m + 1)
+        this.cy[cell] = (this.cy[cell]! * m + py) / (m + 1)
+        this.mass[cell] = m + 1
+
+        const leaf = this.kids[cell] === 0
+        if (leaf && m === 0) {
+          this.point[cell] = i
+          this.pointCell[i] = cell
+          break
+        }
+        if (depth >= MAX_DEPTH) {
+          // Coincident: share the leaf.
+          this.pointCell[i] = cell
+          break
+        }
+        if (leaf) {
+          // Push the resident point one level down before descending.
+          const resident = this.point[cell]!
+          this.point[cell] = -1
+          const c = this.childFor(cell, x[resident]!, y[resident]!)
+          this.mass[c] = 1
+          this.cx[c] = x[resident]!
+          this.cy[c] = y[resident]!
+          this.point[c] = resident
+          this.pointCell[resident] = c
+        }
+        cell = this.childFor(cell, px, py)
+      }
+    }
+  }
+
+  private childFor(cell: number, px: number, py: number): number {
+    const half = this.size[cell]! / 2
+    const l = this.left[cell]!
+    const t = this.top[cell]!
+    const q = (px >= l + half ? 1 : 0) + (py >= t + half ? 2 : 0)
+    const slot = cell * 4 + q
+    const existing = this.child[slot]!
+    if (existing !== -1) return existing
+    const c = this.makeCell(l + (q & 1 ? half : 0), t + (q & 2 ? half : 0), half)
+    // makeCell may have grown the arrays; write through `this`, not a stale local.
+    this.child[slot] = c
+    this.kids[cell] = this.kids[cell]! + 1
+    return c
+  }
 }

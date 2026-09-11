@@ -104,9 +104,9 @@ you do while reading a network:
 
 | Layout | Answers |
 | --- | --- |
-| **Force** | What clusters together? Best under ~1,200 proteins. |
+| **Force** | What clusters together? Each connected component is laid out on its own and the components are packed around the largest, so a sparse network's small islands sit beside the core instead of drifting off the canvas. Usable to several thousand proteins. |
 | **Layered** | How many hops apart are these? Layers are graph distance from the best-connected protein, or from the focused one. Over-full layers wrap into sub-rows. |
-| **Grouped** | What are the modules? |
+| **Grouped** | What are the modules? Trust-weighted communities on a ring, members packed inside each — not connected components, which on a PPI network is one group. |
 | **Circular** | A stable reference arrangement. |
 
 ### Reading a network too big to draw

@@ -119,14 +119,14 @@ export function NetworkView() {
   const empty =
     (view === 'network' && !network && !highLevel) || (view === 'matrix' && !matrix)
 
-  // A spring embedding stops conveying structure well before it stops running. Say so
+  // A spring embedding stops conveying structure well before it stops running — and
+  // since Barnes–Hut it runs to several thousand proteins. Past a few thousand, say so
   // rather than presenting a blob as a result.
   const tooLargeForForce =
-    view === 'network' && network?.mode === 'force' && network.nodes.length > 1500
+    view === 'network' && network?.mode === 'force' && network.nodes.length > 3000
 
-  // Grouped mode is the other thing a reader reaches for at this size, and on a PPI
-  // network it does almost nothing: the network is one giant connected component, so
-  // every protein lands in one group. Say so, and offer the view that does work.
+  // Grouped is by trust-weighted community, so it divides almost any network. Almost:
+  // a hub and its partners has no communities to find, and then grouped is one disc.
   const groupedIsOneBlob =
     view === 'network' &&
     network?.mode === 'grouped' &&
@@ -236,7 +236,7 @@ export function NetworkView() {
           </strong>
           <span>
             {groupedIsOneBlob
-              ? 'Grouping by component cannot help: this network is a single component.'
+              ? 'It does not divide into communities — it is mostly one hub and its partners.'
               : 'Raise the trust threshold, or read it one level up.'}
           </span>
           <button className="primary" onClick={() => void setGrouping('modules')}>
