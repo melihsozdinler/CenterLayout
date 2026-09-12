@@ -434,35 +434,46 @@ function groupedPositions(graph: PpiGraph, groups: readonly number[]) {
   const x = new Float64Array(graph.order)
   const y = new Float64Array(graph.order)
 
-  // Group radius grows with membership so dense modules are not overdrawn.
-  const groupRadius = (size: number) => 18 + 14 * Math.sqrt(size)
+  // Members sit on concentric rings a fixed slot apart, the centre first. The slot is
+  // chosen from the size of the whole network: small networks are drawn with labels,
+  // and a slot tuned for thousands of proteins drew a fifty-protein network so tight
+  // that, once the view zoomed to fit, every label sat on top of its neighbour.
+  const slot = graph.order <= 200 ? 46 : graph.order <= 1000 ? 30 : 22
+  const capacity = (ring: number) => (ring === 0 ? 1 : Math.max(1, Math.floor(2 * Math.PI * ring)))
+  const ringsFor = (size: number) => {
+    let placed = 0
+    let ring = 0
+    while (placed < size) {
+      placed += capacity(ring)
+      ring += 1
+    }
+    return ring - 1
+  }
 
   // Packed rather than spaced around a fixed ring. A ring of fixed radius sized each
   // sector by share, which let a large community's disc run over its neighbours' —
   // communities drawn on top of each other are not communities anyone can read. The
   // packer guarantees no two discs overlap, and puts the largest at the centre.
-  const centres = packDiscs(ordered.map(([, list]) => groupRadius(list.length) + NODE_MARGIN))
+  const centres = packDiscs(
+    ordered.map(([, list]) => ringsFor(list.length) * slot + slot / 2 + NODE_MARGIN),
+  )
 
   for (const [position, [, list]] of ordered.entries()) {
     const { x: cx, y: cy } = centres[position]!
-    const radius = groupRadius(list.length)
-
+    // Best-connected at the centre, so the hub of a community is where the eye lands.
     const sorted = [...list].sort((a, b) => graph.degree(b) - graph.degree(a) || a - b)
-    sorted.forEach((node, index) => {
-      if (sorted.length === 1) {
-        x[node] = cx
-        y[node] = cy
-        return
+    let index = 0
+    for (let ring = 0; index < sorted.length; ring += 1) {
+      const count = Math.min(capacity(ring), sorted.length - index)
+      for (let j = 0; j < count; j += 1) {
+        const node = sorted[index + j]!
+        // Alternate rings are offset by half a slot, so nodes do not line up radially.
+        const angle = ((j + (ring % 2) * 0.5) / count) * Math.PI * 2 - Math.PI / 2
+        x[node] = cx + Math.cos(angle) * ring * slot
+        y[node] = cy + Math.sin(angle) * ring * slot
       }
-      // Concentric rings inside the group, densest at the centre.
-      const ring = Math.floor(Math.sqrt(index))
-      const inRing = Math.max(1, 2 * ring + 1)
-      const positionInRing = index - ring * ring
-      const angle = (positionInRing / inRing) * Math.PI * 2
-      const r = (ring / Math.sqrt(sorted.length)) * radius
-      x[node] = cx + Math.cos(angle) * r
-      y[node] = cy + Math.sin(angle) * r
-    })
+      index += count
+    }
   }
   return { x, y }
 }

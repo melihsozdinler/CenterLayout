@@ -115,10 +115,43 @@ test('shoot the supplement', async ({ page }) => {
   )
   await shoot(page, 'network-force')
   for (const mode of ['layered', 'grouped', 'circular'] as const) {
-    await setNetwork({ mode })
+    // Grouped is coloured by community: the arrangement is about communities, and a
+    // single node colour leaves the reader to infer from position what colour states.
+    await setNetwork({ mode, colourBy: mode === 'grouped' ? 'module' : 'trust' })
     await settle(page)
     await shoot(page, `network-${mode}`)
   }
+  await setNetwork({ colourBy: 'trust' })
+
+  // A large network under Force: Barnes–Hut repulsion draws the whole organism at the
+  // default threshold, where exact repulsion used to give up and draw Grouped.
+  await setNetwork({ mode: 'force', minTrust: 0.15, minDegree: 1, maxEdges: 4000 })
+  await settle(page)
+  await shoot(page, 'network-force-large')
+  await setNetwork({ mode: 'grouped', colourBy: 'module' })
+  await settle(page)
+  await shoot(page, 'network-grouped-large')
+  await setNetwork({ colourBy: 'trust' })
+
+  // A sparse network: one method's interactions fall into many components, which Force
+  // now lays out one at a time and packs around the largest.
+  await page.evaluate(() =>
+    window.prolivis!.ui!.getState().setScope({
+      kind: 'system',
+      keys: ['Reconstituted Complex'],
+      label: 'Reconstituted Complex',
+    }),
+  )
+  await settle(page)
+  await setNetwork({ mode: 'force', grouping: 'proteins' })
+  await settle(page)
+  await shoot(page, 'network-sparse')
+  await page.evaluate(() => window.prolivis!.ui!.getState().setScope(null))
+  await settle(page)
+
+  // Back to the fifty-protein network for the protein panel.
+  await setNetwork({ minTrust: 0.4, minDegree: 2, maxEdges: 400, mode: 'force' })
+  await settle(page)
 
   // 10. One protein, its partners and the evidence behind each. A protein with a few
   // dozen partners rather than the hub with two thousand: the panel lists evidence per

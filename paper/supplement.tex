@@ -195,9 +195,11 @@ interactions, and a figure of that says only ``it is large''; what an arrangemen
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.86\textwidth]{supplement/network-grouped.png}
-  \caption{Grouped. Modules on a ring with members packed inside each. On a PPI network
-  this is honest only when the network has more than one component --- see
-  \S\ref{sec:modules}, which is what to use instead.}
+  \caption{Grouped, coloured by community. Trust-weighted communities as discs, packed
+  around the largest, best-connected member at the centre of each. Grouping by
+  connected component, the obvious choice, does not work here: a PPI network is one
+  component, so every protein lands in one group and the arrangement draws a single
+  disc.}
 \end{figure}
 
 \begin{figure}[h]
@@ -205,6 +207,34 @@ interactions, and a figure of that says only ``it is large''; what an arrangemen
   \includegraphics[width=0.86\textwidth]{supplement/network-circular.png}
   \caption{Circular. Everything on one ring, ordered by a traversal so neighbours sit
   together: a stable reference arrangement that makes no claim about structure.}
+\end{figure}
+
+The four arrangements are all deterministic: a seeded generator, a fixed iteration
+count rather than a run to convergence, and locale-independent tie-breaking, so the
+same network always draws the same picture and a figure can be regenerated from a
+session manifest.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.49\textwidth]{supplement/network-force-large.png}
+  \hfill
+  \includegraphics[width=0.49\textwidth]{supplement/network-grouped-large.png}
+  \caption{The whole organism at the default threshold --- 1{,}813 proteins and 8{,}725
+  interactions --- under Force (left) and Grouped (right). Force uses Barnes--Hut
+  repulsion above three hundred proteins, which is what lets it draw a network this
+  size at all; with exact repulsion it is a second's work only to about twelve
+  hundred. At this size the force layout says how dense the network is and little
+  else, which is what the modules view (\S\ref{sec:modules}) is for.}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.86\textwidth]{supplement/network-sparse.png}
+  \caption{A sparse network: everything reported by Reconstituted Complex, which falls
+  into many components. Each is laid out on its own and they are packed around the
+  largest, spread evenly. Left to one embedding, a component with no edge to the rest
+  feels only repulsion and drifts far outside the others, so fitting the view to
+  include it shrinks the part worth looking at.}
 \end{figure}
 
 \clearpage

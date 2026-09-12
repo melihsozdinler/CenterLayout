@@ -34,6 +34,7 @@
 % Measured numbers, regenerated with the figures by tests/figures/figures.spec.ts.
 \input{figures/numbers.tex}
 \input{figures/numbers-all.tex}
+\input{figures/numbers-network.tex}
 
 \title{ProLiVis 2.0: Literature-Centric Visualization of Protein--Protein
 Interaction Networks, with a Citation-Trust Model for Interaction Evidence}
@@ -333,6 +334,24 @@ $O(n \log n)$, dominated by the sort.
   \label{fig:screens}
 \end{figure*}
 
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.46\textwidth]{figures/network-force.pdf}
+  \hfill
+  \includegraphics[width=0.46\textwidth]{figures/network-grouped.pdf}
+  \caption{The same network under the two arrangements that answer different
+  questions: SARS-CoV-2 in release 5.0.260 at trust $\geq 0.4$, keeping proteins with
+  at least two partners and the best-supported \NetInteractions{} interactions ---
+  \NetProteins{} proteins. Colour is the trust-weighted community. \emph{Left}, force:
+  what clusters together. \emph{Right}, grouped: the \NetCommunities{} communities as
+  packed discs. The communities are not told any biology, and correspond to it anyway
+  --- the replication--transcription complex (nsp5, nsp7--nsp16) in green; the membrane
+  and ER proteins M, E, ORF6, ORF7a/b and nsp6 with host VAPB, OSBP, CLTC and CKAP4 in
+  red; nsp3 and nsp4 with the reticulons RTN3 and RTN4 in orange; N and S with host
+  chaperones and RNA-binding proteins in blue.}
+  \label{fig:network}
+\end{figure*}
+
 \section{Structural extraction under an evidence threshold}
 \label{sec:structure}
 
@@ -443,6 +462,25 @@ the database; the application never iterates over interaction records in JavaScr
 Archive members are inflated in line-aligned chunks with the reader throttled, so peak
 memory is bounded by one chunk regardless of archive size.
 
+
+\paragraph{Drawing the network.} Repulsion in the force layout is exact below three
+hundred proteins and Barnes--Hut above, which is what makes an organism-scale network
+drawable at all: the exact computation takes 1.9\,s at a thousand proteins and
+Barnes--Hut 0.3\,s, 0.6\,s at eighteen hundred, 2.6\,s at six thousand. Each connected
+component is laid out separately and the components are then packed around the largest,
+evenly around each ring. A component with no edge to the rest feels only repulsion from
+it and otherwise drifts outward until gravity balances --- far outside everything else,
+so that fitting the view to include it shrinks the part anyone came to see. Distance
+between components therefore means nothing, which is honest: there is no interaction
+between them for it to mean anything about.
+
+The grouped arrangement uses the same trust-weighted communities as
+\S\ref{sec:highlevel}, placed by the same packer. Grouping by connected component --- the
+obvious choice, and ours at first --- does not work here: a PPI network is one component,
+so every protein lands in one group and the arrangement degenerates to a single disc.
+That is also what a force layout falls back to when a size cap defeats it, which is how
+the two arrangements came to produce the same picture before Barnes--Hut removed the cap.
+Figure~\ref{fig:network} is what they produce now.
 
 Columns are resolved by alias onto a canonical set, because BioGRID's tabular formats
 disagree: the bulk \texttt{tab3} files and the \texttt{tab2} output of the REST service
