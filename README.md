@@ -202,7 +202,20 @@ The original Qt application, as published:
 
 ## Citing
 
-Until the ProLiVis 2.0 paper is published, please cite the original:
+ProLiVis 2.0 is in preparation for arXiv and journal submission:
+
+```bibtex
+@unpublished{sozdinler2026prolivis2,
+  title  = {ProLiVis 2.0: Literature-Centric Visualization of Protein--Protein
+            Interaction Networks, with a Citation-Trust Model for Interaction Evidence},
+  author = {S{\"o}zdinler, Melih and Doksanbir, Yal{\c{c}}{\i}n and
+            Akp{\i}nar, G{\"o}khan and Aktan, Ege},
+  note   = {Manuscript in preparation},
+  year   = {2026}
+}
+```
+
+Until it is published, please also cite the original:
 
 ```bibtex
 @article{sozdinler2021prolivis,

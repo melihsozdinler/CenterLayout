@@ -12,6 +12,8 @@
 \ifdefined\XeTeXversion\else\ifdefined\pdfoutput\pdfoutput=1\fi\fi
 
 \documentclass[conference]{IEEEtran}
+% Conference mode locks out \thanks; the corresponding-author note needs it.
+\IEEEoverridecommandlockouts
 
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
@@ -39,8 +41,18 @@
 \title{ProLiVis 2.0: Literature-Centric Visualization of Protein--Protein
 Interaction Networks, with a Citation-Trust Model for Interaction Evidence}
 
-% Affiliation deliberately left for the author to fill in before submission.
-\author{\IEEEauthorblockN{Melih Sozdinler}}
+% Same author block as the click-graph paper. Turkish letters as LaTeX accents: raw
+% UTF-8 ı, ş and İ silently vanish under XeTeX/tectonic; ö and ç render either way.
+% No \IEEEpubid: that line belongs to an accepted paper, and this one is not yet.
+\author{
+\IEEEauthorblockN{Melih Sözdinler\IEEEauthorrefmark{1}\IEEEauthorrefmark{2}, Yalç\i{}n Doksanbir\IEEEauthorrefmark{1}, Gökhan Akp\i{}nar\IEEEauthorrefmark{1}, Ege Aktan\IEEEauthorrefmark{1}}
+\IEEEauthorblockA{\IEEEauthorrefmark{1}Emlakjet, R\&D Center, R\&D, 34764 \.{I}stanbul, Turkey \\
+Email: melih.sozdinler@emlakjet.com (M.S.); yalcin.doksanbir@emlakjet.com (Y.D.); \\
+gokhan.akpinar@emlakjet.com (G.A.); ege.aktan@emlakjet.com (E.A.)}
+\IEEEauthorblockA{\IEEEauthorrefmark{2}Computer Engineering, Faculty of Engineering and Natural Sciences, \\
+I\c{s}\i{}k University, 34980 \.{I}stanbul, Turkey}
+\thanks{\raggedright Corresponding author: Melih Sözdinler (melih.sozdinler@emlakjet.com)\par}
+}
 
 \begin{document}
 \maketitle
