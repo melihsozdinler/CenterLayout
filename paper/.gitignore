@@ -1,0 +1,5 @@
+# Raster previews are regenerated from the committed SVGs by the figure pipeline.
+# Two are kept because README.md embeds them and GitHub will not render our SVGs.
+figures/*.png
+!figures/interface.png
+!figures/center-layout-aggregated.png

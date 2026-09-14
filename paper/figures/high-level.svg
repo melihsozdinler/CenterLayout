@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-576.0072111683417 -376.9060648557967 1326.7979968330933 797.0114835765492" width="1327" height="797">
+<title>High-level graph — whole network</title>
+<rect x="-576.0072111683417" y="-376.9060648557967" width="1326.7979968330933" height="797.0114835765492" fill="#ffffff"/>
+<line x1="133.977" y1="134.561" x2="-120.148" y2="254.684" stroke="rgba(171, 180, 206, 0.44004730519193536)" stroke-width="7.8"/>
+<line x1="133.977" y1="134.561" x2="33.967" y2="250.709" stroke="rgba(171, 180, 206, 0.4402482039610068)" stroke-width="7.156529623588649"/>
+<line x1="133.977" y1="134.561" x2="-11.308" y2="-247.185" stroke="rgba(171, 180, 206, 0.44075354705588554)" stroke-width="6.704707918084702"/>
+<line x1="225.014" y1="5.061" x2="-11.308" y2="-247.185" stroke="rgba(170, 180, 206, 0.44112812239279947)" stroke-width="6.615667074011468"/>
+<line x1="225.014" y1="5.061" x2="33.967" y2="250.709" stroke="rgba(172, 182, 207, 0.4347436523894884)" stroke-width="6.62533568762613"/>
+<line x1="33.967" y1="250.709" x2="-11.308" y2="-247.185" stroke="rgba(171, 180, 206, 0.43964282901341056)" stroke-width="6.385044971541771"/>
+<line x1="225.014" y1="5.061" x2="133.977" y2="134.561" stroke="rgba(173, 182, 207, 0.43219079781291614)" stroke-width="6.250962746667666"/>
+<line x1="33.967" y1="250.709" x2="-120.148" y2="254.684" stroke="rgba(172, 181, 207, 0.4365990151511438)" stroke-width="5.599496240961592"/>
+<line x1="-11.308" y1="-247.185" x2="-120.148" y2="254.684" stroke="rgba(171, 181, 206, 0.4383579757859536)" stroke-width="5.125334567295109"/>
+<line x1="225.014" y1="5.061" x2="-120.148" y2="254.684" stroke="rgba(172, 181, 207, 0.43624669429838353)" stroke-width="5.106927172909582"/>
+<line x1="133.977" y1="134.561" x2="-26.11" y2="71.873" stroke="rgba(168, 178, 206, 0.4495068658784025)" stroke-width="4.577037377339228"/>
+<line x1="225.014" y1="5.061" x2="-179.783" y2="-17.448" stroke="rgba(173, 182, 207, 0.4324324212976844)" stroke-width="4.770592650875849"/>
+<line x1="-11.308" y1="-247.185" x2="-26.11" y2="71.873" stroke="rgba(168, 178, 206, 0.449189959544826)" stroke-width="4.211511446551618"/>
+<line x1="133.977" y1="134.561" x2="-179.783" y2="-17.448" stroke="rgba(173, 182, 207, 0.4330031575506319)" stroke-width="4.299054054036778"/>
+<line x1="33.967" y1="250.709" x2="-179.783" y2="-17.448" stroke="rgba(173, 182, 207, 0.4327964325307022)" stroke-width="4.200942508276505"/>
+<line x1="225.014" y1="5.061" x2="-26.11" y2="71.873" stroke="rgba(170, 179, 206, 0.4439381214881131)" stroke-width="3.929622645029868"/>
+<line x1="133.977" y1="134.561" x2="9.875" y2="-90.824" stroke="rgba(167, 177, 206, 0.4546875828193308)" stroke-width="3.676787906848845"/>
+<line x1="-120.148" y1="254.684" x2="-179.783" y2="-17.448" stroke="rgba(173, 182, 207, 0.431541632314633)" stroke-width="3.998931237040945"/>
+<line x1="33.967" y1="250.709" x2="-26.11" y2="71.873" stroke="rgba(170, 180, 206, 0.44192519967623034)" stroke-width="3.7984908152771535"/>
+<line x1="33.967" y1="250.709" x2="9.875" y2="-90.824" stroke="rgba(168, 178, 206, 0.4495040785883444)" stroke-width="3.6324310858281104"/>
+<line x1="-11.308" y1="-247.185" x2="9.875" y2="-90.824" stroke="rgba(166, 176, 206, 0.4573002538239622)" stroke-width="3.523241038012374"/>
+<line x1="225.014" y1="5.061" x2="9.875" y2="-90.824" stroke="rgba(169, 179, 206, 0.4448984036909268)" stroke-width="3.642930248585876"/>
+<line x1="-11.308" y1="-247.185" x2="-179.783" y2="-17.448" stroke="rgba(173, 182, 207, 0.43318351735703375)" stroke-width="3.477886266208735"/>
+<line x1="-26.11" y1="71.873" x2="-120.148" y2="254.684" stroke="rgba(170, 180, 206, 0.44189382611244005)" stroke-width="3.043341270682882"/>
+<line x1="9.875" y1="-90.824" x2="-120.148" y2="254.684" stroke="rgba(170, 180, 206, 0.4427341536398781)" stroke-width="2.9186913077940186"/>
+<line x1="-26.11" y1="71.873" x2="9.875" y2="-90.824" stroke="rgba(166, 176, 206, 0.45874415215982056)" stroke-width="2.52319355487532"/>
+<line x1="225.014" y1="5.061" x2="-285.769" y2="-129.361" stroke="rgba(173, 182, 207, 0.43259327600392006)" stroke-width="2.7667637652111523"/>
+<line x1="133.977" y1="134.561" x2="-164.833" y2="-229.752" stroke="rgba(168, 178, 206, 0.44824179272396864)" stroke-width="2.52079055056182"/>
+<line x1="133.977" y1="134.561" x2="-285.769" y2="-129.361" stroke="rgba(173, 182, 207, 0.43175723460310045)" stroke-width="2.5740710424825624"/>
+<line x1="-26.11" y1="71.873" x2="-179.783" y2="-17.448" stroke="rgba(171, 180, 206, 0.4404316490062179)" stroke-width="2.468040914313983"/>
+<line x1="33.967" y1="250.709" x2="-285.769" y2="-129.361" stroke="rgba(173, 182, 207, 0.43315652508865315)" stroke-width="2.518865728314477"/>
+<line x1="-11.308" y1="-247.185" x2="-285.769" y2="-129.361" stroke="rgba(172, 181, 207, 0.43651305596301543)" stroke-width="2.313529490086836"/>
+<line x1="9.875" y1="-90.824" x2="-179.783" y2="-17.448" stroke="rgba(172, 181, 207, 0.4368345865783474)" stroke-width="2.19219891122076"/>
+<line x1="-120.148" y1="254.684" x2="-285.769" y2="-129.361" stroke="rgba(173, 182, 207, 0.43339134239517774)" stroke-width="2.0255926819176118"/>
+<line x1="-26.11" y1="71.873" x2="-285.769" y2="-129.361" stroke="rgba(170, 180, 206, 0.4429947568280071)" stroke-width="1.9152887840138362"/>
+<line x1="33.967" y1="250.709" x2="-164.833" y2="-229.752" stroke="rgba(173, 182, 207, 0.4331254400237003)" stroke-width="1.9514341351075535"/>
+<line x1="-11.308" y1="-247.185" x2="-164.833" y2="-229.752" stroke="rgba(172, 182, 207, 0.43523516064713763)" stroke-width="1.877164051698275"/>
+<line x1="133.977" y1="134.561" x2="171.999" y2="-171.984" stroke="rgba(168, 178, 206, 0.449180031378695)" stroke-width="1.689481235322484"/>
+<line x1="-120.148" y1="254.684" x2="-164.833" y2="-229.752" stroke="rgba(175, 184, 207, 0.42635738101141796)" stroke-width="1.7326296158015966"/>
+<line x1="-179.783" y1="-17.448" x2="-285.769" y2="-129.361" stroke="rgba(173, 182, 207, 0.43285535826235927)" stroke-width="1.6706740109517713"/>
+<line x1="225.014" y1="5.061" x2="-231.313" y2="164.998" stroke="rgba(171, 180, 206, 0.4398254709955705)" stroke-width="1.6227814585107798"/>
+<line x1="9.875" y1="-90.824" x2="-285.769" y2="-129.361" stroke="rgba(172, 181, 207, 0.43747738387906465)" stroke-width="1.6106214576994282"/>
+<line x1="225.014" y1="5.061" x2="-164.833" y2="-229.752" stroke="rgba(174, 183, 207, 0.42740652325456996)" stroke-width="1.6543624195266744"/>
+<line x1="-11.308" y1="-247.185" x2="171.999" y2="-171.984" stroke="rgba(169, 179, 206, 0.4463543118514598)" stroke-width="1.5203467727727968"/>
+<line x1="-26.11" y1="71.873" x2="-164.833" y2="-229.752" stroke="rgba(170, 180, 206, 0.44364001180403123)" stroke-width="1.5163144120995256"/>
+<line x1="33.967" y1="250.709" x2="-231.313" y2="164.998" stroke="rgba(167, 177, 206, 0.4523773870475679)" stroke-width="1.483199274355539"/>
+<line x1="-11.308" y1="-247.185" x2="-231.313" y2="164.998" stroke="rgba(170, 179, 206, 0.44376582312931134)" stroke-width="1.480164167057806"/>
+<line x1="33.967" y1="250.709" x2="171.999" y2="-171.984" stroke="rgba(171, 180, 206, 0.4410554671357684)" stroke-width="1.480164167057806"/>
+<line x1="225.014" y1="5.061" x2="171.999" y2="-171.984" stroke="rgba(173, 183, 207, 0.43105526147608464)" stroke-width="1.3481017098988115"/>
+<line x1="-179.783" y1="-17.448" x2="-164.833" y2="-229.752" stroke="rgba(174, 183, 207, 0.42878267539560067)" stroke-width="1.3533612025220916"/>
+<line x1="133.977" y1="134.561" x2="-231.313" y2="164.998" stroke="rgba(172, 182, 207, 0.43505803364994033)" stroke-width="1.325752174771655"/>
+<line x1="-120.148" y1="254.684" x2="171.999" y2="-171.984" stroke="rgba(168, 178, 206, 0.4517710597233751)" stroke-width="1.279656398660094"/>
+<line x1="9.875" y1="-90.824" x2="-164.833" y2="-229.752" stroke="rgba(172, 182, 207, 0.4352120764205039)" stroke-width="1.3056931654913337"/>
+<line x1="-120.148" y1="254.684" x2="-231.313" y2="164.998" stroke="rgba(172, 182, 207, 0.43481550394731733)" stroke-width="1.2620805594845854"/>
+<line x1="-26.11" y1="71.873" x2="171.999" y2="-171.984" stroke="rgba(166, 177, 206, 0.45561274683312103)" stroke-width="1.1933948296057613"/>
+<line x1="-26.11" y1="71.873" x2="-231.313" y2="164.998" stroke="rgba(166, 177, 206, 0.45593057020585637)" stroke-width="1.1891646547364614"/>
+<line x1="9.875" y1="-90.824" x2="171.999" y2="-171.984" stroke="rgba(156, 167, 204, 0.4942125463035782)" stroke-width="1.101720061101196"/>
+<line x1="-120.148" y1="254.684" x2="-360.607" y2="68.17" stroke="rgba(169, 179, 206, 0.4447944474426852)" stroke-width="1.1367193915645297"/>
+<line x1="33.967" y1="250.709" x2="-360.607" y2="68.17" stroke="rgba(174, 183, 207, 0.42853137985586337)" stroke-width="1.1428088432145282"/>
+<line x1="133.977" y1="134.561" x2="-360.607" y2="68.17" stroke="rgba(173, 183, 207, 0.43100556343012797)" stroke-width="1.1367193915645297"/>
+<line x1="-179.783" y1="-17.448" x2="171.999" y2="-171.984" stroke="rgba(173, 182, 207, 0.4313292497709485)" stroke-width="1.1190512130210424"/>
+<line x1="-285.769" y1="-129.361" x2="-164.833" y2="-229.752" stroke="rgba(176, 185, 207, 0.42270325600447495)" stroke-width="1.128004287461144"/>
+<line x1="-179.783" y1="-17.448" x2="-231.313" y2="164.998" stroke="rgba(173, 182, 207, 0.4319479723625431)" stroke-width="1.09757725496518"/>
+<line x1="9.875" y1="-90.824" x2="-231.313" y2="164.998" stroke="rgba(173, 182, 207, 0.4335764273069834)" stroke-width="1.0905413367184023"/>
+<line x1="-11.308" y1="-247.185" x2="-360.607" y2="68.17" stroke="rgba(173, 182, 207, 0.43249842650776904)" stroke-width="1.0698666267190657"/>
+<line x1="-231.313" y1="164.998" x2="-285.769" y2="-129.361" stroke="rgba(169, 179, 206, 0.447087469747574)" stroke-width="0.9726072744109308"/>
+<line x1="225.014" y1="5.061" x2="-360.607" y2="68.17" stroke="rgba(173, 182, 207, 0.4324690446653996)" stroke-width="0.9864371646860287"/>
+<line x1="9.875" y1="-90.824" x2="-360.607" y2="68.17" stroke="rgba(163, 174, 205, 0.4687267561630153)" stroke-width="0.9318309834146841"/>
+<line x1="-285.769" y1="-129.361" x2="171.999" y2="-171.984" stroke="rgba(173, 182, 207, 0.4339278606909237)" stroke-width="0.9549197699355254"/>
+<line x1="-26.11" y1="71.873" x2="-360.607" y2="68.17" stroke="rgba(174, 183, 207, 0.4303119436047854)" stroke-width="0.9349333133595328"/>
+<line x1="-179.783" y1="-17.448" x2="-360.607" y2="68.17" stroke="rgba(174, 183, 207, 0.42821321213120644)" stroke-width="0.9253962776795401"/>
+<line x1="-164.833" y1="-229.752" x2="171.999" y2="-171.984" stroke="rgba(175, 184, 207, 0.42540195624678145)" stroke-width="0.9150715162739538"/>
+<line x1="-231.313" y1="164.998" x2="-164.833" y2="-229.752" stroke="rgba(175, 184, 207, 0.42363432409338087)" stroke-width="0.8996548563452385"/>
+<line x1="-285.769" y1="-129.361" x2="-360.607" y2="68.17" stroke="rgba(174, 183, 207, 0.42810355395667526)" stroke-width="0.8575357581369769"/>
+<line x1="-231.313" y1="164.998" x2="171.999" y2="-171.984" stroke="rgba(172, 182, 207, 0.4352074661468858)" stroke-width="0.8498274281726192"/>
+<line x1="-360.607" y1="68.17" x2="-164.833" y2="-229.752" stroke="rgba(170, 179, 206, 0.4440850996770962)" stroke-width="0.8406839247393655"/>
+<line x1="-231.313" y1="164.998" x2="-360.607" y2="68.17" stroke="rgba(169, 179, 206, 0.44584065389964694)" stroke-width="0.8287678790684885"/>
+<line x1="225.014" y1="5.061" x2="574.991" y2="-3.255" stroke="rgba(179, 187, 208, 0.4111099397042506)" stroke-width="0.8287678790684885"/>
+<circle cx="225.014" cy="5.061" r="44" fill="#3b4fd8" stroke="rgba(170, 180, 206, 0.9)" stroke-width="1.736824569123809" opacity="1"/>
+<circle cx="133.977" cy="134.561" r="42.411" fill="#d8453c" stroke="rgba(164, 175, 205, 0.9)" stroke-width="1.915357438589622" opacity="1"/>
+<circle cx="33.967" cy="250.709" r="41.399" fill="#1c9c6b" stroke="rgba(166, 176, 206, 0.9)" stroke-width="1.8580180512256215" opacity="1"/>
+<circle cx="-11.308" cy="-247.185" r="39.721" fill="#c9761f" stroke="rgba(164, 174, 205, 0.9)" stroke-width="1.9278918328298666" opacity="1"/>
+<circle cx="-26.11" cy="71.873" r="34.886" fill="#7a52c9" stroke="rgba(166, 176, 206, 0.9)" stroke-width="1.856245928339737" opacity="1"/>
+<circle cx="9.875" cy="-90.824" r="31.962" fill="#0e8fa8" stroke="rgba(149, 162, 203, 0.9)" stroke-width="2.3312686098383057" opacity="1"/>
+<circle cx="-120.148" cy="254.684" r="30.421" fill="#b3327a" stroke="rgba(167, 177, 206, 0.9)" stroke-width="1.823874201169129" opacity="1"/>
+<circle cx="-179.783" cy="-17.448" r="27.636" fill="#6b8f1f" stroke="rgba(171, 180, 206, 0.9)" stroke-width="1.7232389869118736" opacity="1"/>
+<circle cx="-231.313" cy="164.998" r="25.745" fill="#a8541c" stroke="rgba(166, 177, 206, 0.9)" stroke-width="1.842996482838986" opacity="1"/>
+<circle cx="-285.769" cy="-129.361" r="23.458" fill="#4a5568" stroke="rgba(173, 182, 207, 0.9)" stroke-width="1.6666237453175379" opacity="1"/>
+<circle cx="-360.607" cy="68.17" r="21.632" fill="#3b4fd8" stroke="rgba(169, 179, 206, 0.9)" stroke-width="1.7679386374597041" opacity="1"/>
+<circle cx="-164.833" cy="-229.752" r="19.231" fill="#d8453c" stroke="rgba(142, 156, 202, 0.9)" stroke-width="2.538756823969372" opacity="1"/>
+<circle cx="171.999" cy="-171.984" r="17.2" fill="#1c9c6b" stroke="rgba(144, 157, 203, 0.9)" stroke-width="2.4935295004649465" opacity="1"/>
+<circle cx="574.991" cy="-3.255" r="14.566" fill="#c9761f" stroke="rgba(159, 170, 205, 0.9)" stroke-width="2.0632975046092477" opacity="1"/>
+<text x="225.014" y="9.061" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">5624</text>
+<text x="225.014" y="62.061" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 1: S, M, nsp6 +5621</text>
+<text x="133.977" y="138.561" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">5044</text>
+<text x="133.977" y="189.972" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 2: NUDT21, RPA1, MYC +5041</text>
+<text x="33.967" y="254.709" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">4691</text>
+<text x="33.967" y="305.108" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 3: TRIM67, PARK2, CUL3 +4688</text>
+<text x="-11.308" y="-243.185" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">4134</text>
+<text x="-11.308" y="-194.465" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 4: KIAA1429, PRNP, EGFR +4131</text>
+<text x="-26.11" y="75.873" fill="#ffffff" font-size="16" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">2726</text>
+<text x="-26.11" y="119.759" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 5: APP, POLI, GOLGA2 +2723</text>
+<text x="9.875" y="-86.824" fill="#ffffff" font-size="15.980776054945107" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">2016</text>
+<text x="9.875" y="-45.862" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 6: TRIM25, UBC, AGO2 +2013</text>
+<text x="-120.148" y="258.684" fill="#ffffff" font-size="15.210480153606964" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">1685</text>
+<text x="-120.148" y="324.105" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 7: RAF1, KIF14, N +1682</text>
+<text x="-179.783" y="-13.448" fill="#ffffff" font-size="13.818230311478914" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">1162</text>
+<text x="-179.783" y="23.188" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 8: ZRANB1, PLEKHA4, SUCLG2 +1159</text>
+<text x="-231.313" y="168.998" fill="#ffffff" font-size="12.872489324614376" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">862</text>
+<text x="-231.313" y="203.743" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 9: RNF207, GNB1, GNAI2 +859</text>
+<text x="-285.769" y="-125.361" fill="#ffffff" font-size="11.729056546281" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">559</text>
+<text x="-285.769" y="-92.902" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 10: JUP, DSP, ALB +556</text>
+<text x="-360.607" y="72.17" fill="#ffffff" font-size="10.816096029280994" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">364</text>
+<text x="-360.607" y="102.802" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 11: OTUD4, KCNQ4, Csde1 +361</text>
+<text x="-164.833" y="-225.752" fill="#ffffff" font-size="9.615571871735934" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">171</text>
+<text x="-164.833" y="-171.521" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 12: PIH1D1, MED4, POLR2B +168</text>
+<text x="171.999" y="-167.984" fill="#ffffff" font-size="9" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">64</text>
+<text x="171.999" y="-141.784" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 13: CDC23, MAD2L1, CDC27 +61</text>
+<text x="574.991" y="0.745" fill="#ffffff" font-size="9" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="700">2</text>
+<text x="574.991" y="24.311" fill="#1c2024" font-size="11" font-family="system-ui, sans-serif" text-anchor="middle" dominant-baseline="central" font-weight="500">Community 14: UTS2B, UTS2R</text>
+</svg>

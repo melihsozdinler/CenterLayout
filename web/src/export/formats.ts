@@ -1,0 +1,225 @@
+/**
+ * Export formats.
+ *
+ * The point of this module is that nothing here is a dead end. A scientist should be
+ * able to take a filtered, scored network into Cytoscape, into R, into a spreadsheet,
+ * or into a figure, without asking us for permission or writing a parser.
+ *
+ * Every tabular export carries the per-term trust breakdown alongside the score, so a
+ * number that came out of this tool can be argued with rather than merely accepted.
+ */
+
+import { APP_NAME, APP_VERSION } from '../app-info'
+import { TRUST_TERMS } from '../trust/model'
+import type { ScoredPair } from '../trust/score'
+import type { HighLevelGraph } from '../algo/contract'
+
+export type TabularFormat = 'csv' | 'tsv'
+
+const escapeCsv = (value: unknown, delimiter: string): string => {
+  if (value === null || value === undefined) return ''
+  const text = String(value)
+  // Quote when the value could otherwise break the row apart.
+  if (
+    text.includes(delimiter) ||
+    text.includes('"') ||
+    text.includes('\n') ||
+    text.includes('\r')
+  ) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+  return text
+}
+
+export function toDelimited(
+  rows: readonly Record<string, unknown>[],
+  format: TabularFormat = 'csv',
+): string {
+  const delimiter = format === 'tsv' ? '\t' : ','
+  if (rows.length === 0) return ''
+
+  // Union of keys, in first-seen order, so a sparse row cannot silently shift columns.
+  const columns: string[] = []
+  const seen = new Set<string>()
+  for (const row of rows) {
+    for (const key of Object.keys(row)) {
+      if (!seen.has(key)) {
+        seen.add(key)
+        columns.push(key)
+      }
+    }
+  }
+
+  const lines = [columns.map((c) => escapeCsv(c, delimiter)).join(delimiter)]
+  for (const row of rows) {
+    lines.push(columns.map((c) => escapeCsv(row[c], delimiter)).join(delimiter))
+  }
+  return `${lines.join('\n')}\n`
+}
+
+/** Scored interactions as flat rows, one per interaction, terms expanded. */
+export function pairsToRows(pairs: readonly ScoredPair[]): Record<string, unknown>[] {
+  return pairs.map((pair) => {
+    const row: Record<string, unknown> = {
+      pair_key: pair.pairKey,
+      gene_a: pair.symbolLo ?? '',
+      gene_b: pair.symbolHi ?? '',
+      biogrid_id_a: pair.nodeLo,
+      biogrid_id_b: pair.nodeHi,
+      trust_score: round(pair.score),
+      // How much of the model was informed. A score at 0.4 coverage is a different
+      // claim from the same score at full coverage, and the file should say so.
+      trust_coverage: round(pair.coverage),
+      evidence_type: pair.evidenceType,
+    }
+    for (const term of TRUST_TERMS) {
+      const value = pair.terms[term]
+      row[`term_${toSnake(term)}`] = value === null ? '' : round(value)
+    }
+    return row
+  })
+}
+
+const round = (v: number) => Math.round(v * 1e6) / 1e6
+const toSnake = (v: string) => v.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)
+
+// --- network formats --------------------------------------------------------
+
+/**
+ * Cytoscape's SIF: the simplest interchange there is, and still the fastest way to get
+ * a network in front of a biologist. It carries no attributes, so the trust score goes
+ * into the interaction type where Cytoscape will show it.
+ */
+export function toSif(pairs: readonly ScoredPair[], bucketCount = 5): string {
+  return `${pairs
+    .map((pair) => {
+      const bucket = Math.min(bucketCount - 1, Math.floor(pair.score * bucketCount))
+      return [
+        pair.symbolLo ?? pair.nodeLo,
+        `trust${bucket + 1}of${bucketCount}`,
+        pair.symbolHi ?? pair.nodeHi,
+      ].join('\t')
+    })
+    .join('\n')}\n`
+}
+
+const xmlEscape = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
+/** GraphML, with the trust score and every term as typed edge attributes. */
+export function toGraphml(pairs: readonly ScoredPair[]): string {
+  const nodes = new Map<number, string>()
+  for (const pair of pairs) {
+    if (!nodes.has(pair.nodeLo)) nodes.set(pair.nodeLo, pair.symbolLo ?? String(pair.nodeLo))
+    if (!nodes.has(pair.nodeHi)) nodes.set(pair.nodeHi, pair.symbolHi ?? String(pair.nodeHi))
+  }
+
+  const edgeKeys = [
+    { id: 'trust', name: 'trust_score', type: 'double' },
+    { id: 'coverage', name: 'trust_coverage', type: 'double' },
+    { id: 'evidence', name: 'evidence_type', type: 'string' },
+    ...TRUST_TERMS.map((term) => ({
+      id: `t_${term}`,
+      name: `term_${toSnake(term)}`,
+      type: 'double',
+    })),
+  ]
+
+  const parts: string[] = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<graphml xmlns="http://graphml.graphdrawing.org/xmlns"',
+    '         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+    '         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns',
+    '         http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">',
+    `  <!-- Generated by ${APP_NAME} ${APP_VERSION} -->`,
+    '  <key id="label" for="node" attr.name="label" attr.type="string"/>',
+    '  <key id="biogrid" for="node" attr.name="biogrid_id" attr.type="long"/>',
+    ...edgeKeys.map(
+      (k) =>
+        `  <key id="${k.id}" for="edge" attr.name="${k.name}" attr.type="${k.type}"/>`,
+    ),
+    '  <graph id="ppi" edgedefault="undirected">',
+  ]
+
+  for (const [id, label] of nodes) {
+    parts.push(
+      `    <node id="n${id}">`,
+      `      <data key="label">${xmlEscape(label)}</data>`,
+      `      <data key="biogrid">${id}</data>`,
+      '    </node>',
+    )
+  }
+
+  pairs.forEach((pair, index) => {
+    parts.push(`    <edge id="e${index}" source="n${pair.nodeLo}" target="n${pair.nodeHi}">`)
+    parts.push(`      <data key="trust">${round(pair.score)}</data>`)
+    parts.push(`      <data key="coverage">${round(pair.coverage)}</data>`)
+    parts.push(`      <data key="evidence">${pair.evidenceType}</data>`)
+    for (const term of TRUST_TERMS) {
+      const value = pair.terms[term]
+      // Omit rather than write zero: an unknown term is not a term worth nothing.
+      if (value !== null) {
+        parts.push(`      <data key="t_${term}">${round(value)}</data>`)
+      }
+    }
+    parts.push('    </edge>')
+  })
+
+  parts.push('  </graph>', '</graphml>')
+  return `${parts.join('\n')}\n`
+}
+
+/** GML, which OGDF, Gephi and yEd all read. */
+export function toGml(pairs: readonly ScoredPair[]): string {
+  const nodes = new Map<number, string>()
+  for (const pair of pairs) {
+    if (!nodes.has(pair.nodeLo)) nodes.set(pair.nodeLo, pair.symbolLo ?? String(pair.nodeLo))
+    if (!nodes.has(pair.nodeHi)) nodes.set(pair.nodeHi, pair.symbolHi ?? String(pair.nodeHi))
+  }
+
+  const quote = (value: string) => `"${value.replace(/["\\]/g, '')}"`
+  const parts: string[] = ['graph [', '  directed 0', `  comment ${quote(`${APP_NAME} ${APP_VERSION}`)}`]
+
+  for (const [id, label] of nodes) {
+    parts.push('  node [', `    id ${id}`, `    label ${quote(label)}`, '  ]')
+  }
+  for (const pair of pairs) {
+    parts.push(
+      '  edge [',
+      `    source ${pair.nodeLo}`,
+      `    target ${pair.nodeHi}`,
+      `    value ${round(pair.score)}`,
+      '  ]',
+    )
+  }
+  parts.push(']')
+  return `${parts.join('\n')}\n`
+}
+
+/** A contracted graph as two tables: modules and the links between them. */
+export function highLevelToRows(graph: HighLevelGraph): {
+  nodes: Record<string, unknown>[]
+  edges: Record<string, unknown>[]
+} {
+  return {
+    nodes: graph.nodes.map((node) => ({
+      group_id: node.id,
+      label: node.label,
+      size: node.size,
+      internal_edges: node.internalEdges,
+      internal_trust: node.internalTrust === null ? '' : round(node.internalTrust),
+      members: node.memberLabels.join('|'),
+      biogrid_ids: node.members.join('|'),
+    })),
+    edges: graph.edges.map((edge) => ({
+      source_group: edge.source,
+      target_group: edge.target,
+      edge_count: edge.edgeCount,
+      trust_mass: round(edge.trustMass),
+    })),
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.vite/
+*.local
+.DS_Store
+
+# Never commit credentials. The BioGRID access key lives in browser localStorage
+# (entered by the user) or in the PROLIVIS_ACCESS_KEY env var for live tests.
+.env
+.env.*
+*.key

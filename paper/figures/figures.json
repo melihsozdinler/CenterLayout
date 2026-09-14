@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "center-layout-sars-cov-2",
+    "caption": "Center Layout 2.0 for SARS-CoV-2. The organism is at the centre, experimental methods form the inner ring with sector width proportional to their share of the literature, and publications fan outward within their method sector. Node area is proportional to interactions contributed.",
+    "methods": 19,
+    "publications": 1688,
+    "nodes": 1708,
+    "edges": 2355,
+    "query": {
+      "organismId": 2697049,
+      "aggregateBelow": 0,
+      "multiMethod": "circular-mean"
+    },
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
+  },
+  {
+    "slug": "center-layout-aggregated",
+    "caption": "The same data with third-level aggregation: methods supported by fewer than five publications collapse into a single node, and the long tail of rarely used assays stops consuming half the circle in unreadable slivers.",
+    "methods": 16,
+    "publications": 1688,
+    "nodes": 1705,
+    "edges": 2346,
+    "query": {
+      "organismId": 2697049,
+      "aggregateBelow": 5,
+      "multiMethod": "circular-mean"
+    },
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
+  },
+  {
+    "slug": "center-layout-duplicated",
+    "caption": "Multi-method publications duplicated into each method sector rather than placed once between them. Each method reads more cleanly in isolation, at the cost of overstating how large the literature is.",
+    "methods": 19,
+    "publications": 2336,
+    "nodes": 2356,
+    "edges": 2355,
+    "query": {
+      "organismId": 2697049,
+      "aggregateBelow": 0,
+      "multiMethod": "duplicate"
+    },
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
+  },
+  {
+    "slug": "center-layout-all-organisms",
+    "caption": "The whole cross-species dataset, spanning SARS-CoV-2, SARS-CoV, MERS and their human hosts. Gene symbols are not unique across these organisms, which is why nodes are keyed by BioGRID gene identifier.",
+    "methods": 21,
+    "publications": 2063,
+    "nodes": 2085,
+    "edges": 2977,
+    "query": {
+      "organismId": null,
+      "aggregateBelow": 0,
+      "multiMethod": "circular-mean"
+    },
+    "source": "BIOGRID-CORONAVIRUS-5.0.260.tab3.zip",
+    "biogridRelease": "5.0.260"
+  }
+]

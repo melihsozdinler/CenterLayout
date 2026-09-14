@@ -1,0 +1,40 @@
+{
+  "source": "BIOGRID-ALL-5.0.260.tab3.zip",
+  "biogridRelease": "5.0.260",
+  "organism": "Homo sapiens",
+  "minTrust": 0,
+  "levels": [
+    {
+      "order": 29104,
+      "size": 1047820,
+      "modules": 14,
+      "largest": 5624,
+      "strategy": "communities",
+      "seconds": 1.7176000000014902
+    },
+    {
+      "order": 5624,
+      "size": 141011,
+      "modules": 9,
+      "largest": 1276,
+      "strategy": "communities",
+      "seconds": 0.16980000000074505
+    },
+    {
+      "order": 1276,
+      "size": 15102,
+      "modules": 10,
+      "largest": 267,
+      "strategy": "communities",
+      "seconds": 0.015699999999254942
+    },
+    {
+      "order": 267,
+      "size": 1673,
+      "modules": 8,
+      "largest": 53,
+      "strategy": "communities",
+      "seconds": 0.003200000002980232
+    }
+  ]
+}
